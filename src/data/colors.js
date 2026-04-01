@@ -68,10 +68,11 @@ export function cloudColor(cover) {
   return `rgb(${gray},${gray},${gray})`;
 }
 
-// Cloud cell text color (dark text on light, lighter on dark)
+// Cloud cell text color (dark text on light, white on dark)
 export function cloudTextColor(cover) {
   if (cover == null) return '#888';
-  return cover > 60 ? '#444' : '#111';
+  const gray = Math.round(255 - (cover / 100) * 200);
+  return gray < 140 ? '#fff' : '#111';
 }
 
 // CAPE: white→lightblue→green→yellow→red
