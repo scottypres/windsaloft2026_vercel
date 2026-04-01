@@ -23,6 +23,7 @@
   --cell-font-size: 11px;
   --header-font-size: 9px;
   --alt-width: 60px;
+  --cell-pad: 2px;
 }
 
 html {
@@ -441,7 +442,7 @@ body {
   z-index: 2;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
-  padding: 0;
+  padding: var(--cell-pad);
   text-align: center;
   font-weight: 500;
   min-width: var(--cell-width);
@@ -458,7 +459,7 @@ body {
   background: var(--bg-panel) !important;
   font-weight: 700;
   font-size: var(--header-font-size);
-  padding: 0 0.2rem !important;
+  padding: var(--cell-pad) !important;
   min-width: var(--alt-width);
 }
 
@@ -470,7 +471,7 @@ body {
   background: var(--bg-panel);
   font-weight: 600;
   font-size: var(--cell-font-size);
-  padding: 0 0.2rem;
+  padding: var(--cell-pad);
   text-align: right;
   border-right: 1px solid var(--border);
   white-space: nowrap;
@@ -504,7 +505,7 @@ body {
 
 /* Data cells */
 .cell {
-  padding: 0;
+  padding: var(--cell-pad);
   text-align: center;
   font-weight: 600;
   font-size: var(--cell-font-size);
