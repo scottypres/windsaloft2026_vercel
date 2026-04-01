@@ -28,6 +28,7 @@
   --table-gap: 8px;
   --border-width: 0.5px;
   --day-border-width: 3px;
+  --supp-font-size: 9px;
 }
 
 html {
@@ -485,6 +486,7 @@ body {
 .supp-label {
   font-style: italic;
   font-weight: 500;
+  font-size: var(--supp-font-size);
   color: var(--text-muted);
   border-top: 1px solid var(--border);
 }
@@ -573,7 +575,7 @@ body {
 
 /* Supplementary row cells */
 .supp-cell {
-  font-size: 0.7rem;
+  font-size: var(--supp-font-size);
   font-weight: 500;
 }
 
