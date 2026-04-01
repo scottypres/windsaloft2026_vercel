@@ -9,11 +9,13 @@
 <body>
   <div id="app">
     <header class="app-header">
-      <h1>Soar Forecaster</h1>
-      <p class="subtitle">Wind & weather aloft for paramotor and sailplane pilots</p>
+      <div class="header-row">
+        <h1>Soar Forecaster</h1>
+        <button id="toggle-settings" class="toggle-settings-btn">Settings</button>
+      </div>
     </header>
 
-    <div class="top-bar">
+    <div id="top-bar" class="top-bar">
       <div id="location-panel"></div>
       <div id="controls-panel"></div>
     </div>
@@ -30,6 +32,32 @@
       <div class="table-section">
         <div id="icon-table" class="table-container"></div>
       </div>
+    </div>
+    <div id="layout-settings" class="layout-settings hidden">
+      <div class="layout-settings-inner">
+        <span class="section-title">Layout</span>
+        <label class="inline-label">Cell Width
+          <input type="range" id="layout-cell-width" min="24" max="70" value="34" class="range-input">
+          <span id="layout-cell-width-val">34</span>px
+        </label>
+        <label class="inline-label">Cell Height
+          <input type="range" id="layout-cell-height" min="16" max="50" value="28" class="range-input">
+          <span id="layout-cell-height-val">28</span>px
+        </label>
+        <label class="inline-label">Header Height
+          <input type="range" id="layout-header-height" min="30" max="70" value="48" class="range-input">
+          <span id="layout-header-height-val">48</span>px
+        </label>
+        <label class="inline-label">Font Size
+          <input type="range" id="layout-font-size" min="9" max="16" value="11" class="range-input">
+          <span id="layout-font-size-val">11</span>px
+        </label>
+        <label class="inline-label">Alt Col Width
+          <input type="range" id="layout-alt-width" min="50" max="100" value="70" class="range-input">
+          <span id="layout-alt-width-val">70</span>px
+        </label>
+      </div>
+      <button id="layout-toggle" class="layout-toggle-btn">Layout Settings</button>
     </div>
   </div>
 

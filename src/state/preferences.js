@@ -26,6 +26,14 @@ const DEFAULTS = {
   savedLocations: [],
   lastLocation: null,
   showAllLocations: false,
+  settingsVisible: true,
+  layout: {
+    cellWidth: 34,
+    cellHeight: 28,
+    headerHeight: 48,
+    fontSize: 11,
+    altWidth: 70,
+  },
 };
 
 export function loadPrefs() {
@@ -38,10 +46,11 @@ export function loadPrefs() {
       ...saved,
       windThresholds: { ...DEFAULTS.windThresholds, ...saved.windThresholds },
       supplementaryRows: { ...DEFAULTS.supplementaryRows, ...saved.supplementaryRows },
+      layout: { ...DEFAULTS.layout, ...saved.layout },
       savedLocations: saved.savedLocations || [],
     };
   } catch {
-    return { ...DEFAULTS, supplementaryRows: { ...DEFAULTS.supplementaryRows }, windThresholds: { ...DEFAULTS.windThresholds }, savedLocations: [] };
+    return { ...DEFAULTS, supplementaryRows: { ...DEFAULTS.supplementaryRows }, windThresholds: { ...DEFAULTS.windThresholds }, layout: { ...DEFAULTS.layout }, savedLocations: [] };
   }
 }
 

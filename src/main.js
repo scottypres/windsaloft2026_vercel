@@ -155,7 +155,81 @@ async function renderAllLocations() {
   }
 }
 
+function applyLayout(layout) {
+  const root = document.documentElement;
+  root.style.setProperty('--cell-width', `${layout.cellWidth}px`);
+  root.style.setProperty('--cell-height', `${layout.cellHeight}px`);
+  root.style.setProperty('--header-height', `${layout.headerHeight}px`);
+  root.style.setProperty('--cell-font-size', `${layout.fontSize}px`);
+  root.style.setProperty('--alt-width', `${layout.altWidth}px`);
+}
+
+function initLayoutSettings() {
+  const panel = document.getElementById('layout-settings');
+  const toggleBtn = document.getElementById('layout-toggle');
+  const inner = panel.querySelector('.layout-settings-inner');
+
+  toggleBtn.addEventListener('click', () => {
+    inner.classList.toggle('hidden');
+  });
+
+  const sliders = {
+    'layout-cell-width': 'cellWidth',
+    'layout-cell-height': 'cellHeight',
+    'layout-header-height': 'headerHeight',
+    'layout-font-size': 'fontSize',
+    'layout-alt-width': 'altWidth',
+  };
+
+  for (const [id, key] of Object.entries(sliders)) {
+    const slider = document.getElementById(id);
+    const valSpan = document.getElementById(`${id}-val`);
+
+    // Restore saved value
+    if (prefs.layout[key] != null) {
+      slider.value = prefs.layout[key];
+      valSpan.textContent = prefs.layout[key];
+    }
+
+    slider.addEventListener('input', () => {
+      valSpan.textContent = slider.value;
+      prefs.layout[key] = parseInt(slider.value);
+      applyLayout(prefs.layout);
+    });
+    slider.addEventListener('change', () => {
+      savePrefs(prefs);
+    });
+  }
+
+  // Show the toggle button always (panel starts hidden)
+  panel.classList.remove('hidden');
+  inner.classList.add('hidden');
+  applyLayout(prefs.layout);
+}
+
+function initSettingsToggle() {
+  const btn = document.getElementById('toggle-settings');
+  const topBar = document.getElementById('top-bar');
+
+  const updateVisibility = () => {
+    topBar.classList.toggle('hidden', !prefs.settingsVisible);
+    btn.textContent = prefs.settingsVisible ? 'Hide Settings' : 'Settings';
+  };
+
+  btn.addEventListener('click', () => {
+    prefs.settingsVisible = !prefs.settingsVisible;
+    savePrefs(prefs);
+    updateVisibility();
+  });
+
+  updateVisibility();
+}
+
 function init() {
+  // Settings toggle & layout
+  initSettingsToggle();
+  initLayoutSettings();
+
   // Init location UI
   locationUI = initLocationUI(document.getElementById('location-panel'), {
     onLocationSelect(loc) {
