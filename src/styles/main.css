@@ -567,10 +567,9 @@ body {
   z-index: 1;
 }
 
-/* Fog mode warning */
+/* Fog mode warning on supplementary cells */
 .fog-warning {
-  outline: 2px solid var(--danger);
-  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px var(--danger) !important;
 }
 
 /* Supplementary row cells */

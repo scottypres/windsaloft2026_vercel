@@ -137,6 +137,8 @@ export function renderTable(container, data, options = {}) {
   // Supplementary rows
   if (view === 'wind' || view === 'clouds') {
     const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows);
+    // Pre-compute fog likelihood per hour for highlighting supp cells
+    const fogLabels = new Set(['DP Spread', 'Temp °F', 'Vis (mi)']);
     for (const row of suppRows) {
       html.push('<tr class="supp-row">');
       html.push(`<td class="alt-label supp-label">${row.label}</td>`);
@@ -147,8 +149,22 @@ export function renderTable(container, data, options = {}) {
         const dayClass = h.isDay ? 'day-col' : 'night-col';
         const boundary =
           j > 0 && data.hours[hourIndices[j - 1]]?.dateLabel !== h.dateLabel ? ' day-boundary' : '';
+        // Fog warning on relevant supp cells
+        let fogClass = '';
+        if (showFogMode && fogLabels.has(row.label)) {
+          const humidity = data.surface.humidity[hi];
+          const dpSpread = data.surface.dewpointSpread[hi];
+          const vis = data.surface.visibility ? data.surface.visibility[hi] : null;
+          if (
+            (humidity != null && humidity > 90) ||
+            (dpSpread != null && dpSpread < 3) ||
+            (vis != null && vis < 2)
+          ) {
+            fogClass = ' fog-warning';
+          }
+        }
         html.push(
-          `<td class="cell supp-cell ${dayClass}${boundary}" style="background:${cell.bg};color:${cell.color}">${cell.val}</td>`
+          `<td class="cell supp-cell ${dayClass}${boundary}${fogClass}" style="background:${cell.bg};color:${cell.color}">${cell.val}</td>`
         );
       }
       html.push('</tr>');
@@ -164,10 +180,6 @@ export function renderTable(container, data, options = {}) {
     applyWindShear(container, data, altRows, hourIndices, hideHighAltitude);
   }
 
-  // Post-render: fog mode
-  if (view === 'wind' && showFogMode) {
-    applyFogMode(container, data, hourIndices);
-  }
 }
 
 function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) {
@@ -256,6 +268,30 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
         return { val, bg, color };
       }));
     }
+    if (shown.cloudLow) {
+      rows.push(makeRow('Low Cld', hourIndices, (i) => {
+        const v = s.cloudLow[i];
+        const val = v != null ? `${Math.round(v)}%` : '?';
+        const bg = cloudColor(v);
+        return { val, bg, color: cloudTextColor(v) };
+      }));
+    }
+    if (shown.cloudMid) {
+      rows.push(makeRow('Mid Cld', hourIndices, (i) => {
+        const v = s.cloudMid[i];
+        const val = v != null ? `${Math.round(v)}%` : '?';
+        const bg = cloudColor(v);
+        return { val, bg, color: cloudTextColor(v) };
+      }));
+    }
+    if (shown.cloudHigh) {
+      rows.push(makeRow('High Cld', hourIndices, (i) => {
+        const v = s.cloudHigh[i];
+        const val = v != null ? `${Math.round(v)}%` : '?';
+        const bg = cloudColor(v);
+        return { val, bg, color: cloudTextColor(v) };
+      }));
+    }
   }
 
   if (view === 'clouds') {
@@ -340,30 +376,3 @@ function applyWindShear(container, data, altRows, hourIndices, hideHighAltitude)
   }
 }
 
-function applyFogMode(container, data, hourIndices) {
-  const table = container.querySelector('.forecast-table');
-  if (!table) return;
-  // Find the lowest altitude rows in the table to apply fog indicators
-  const rows = table.querySelectorAll('tbody tr:not(.supp-row)');
-  const lastRow = rows[rows.length - 1];
-  if (!lastRow) return;
-
-  for (let colIdx = 0; colIdx < hourIndices.length; colIdx++) {
-    const hi = hourIndices[colIdx];
-    const humidity = data.surface.humidity[hi];
-    const dpSpread = data.surface.dewpointSpread[hi];
-    const vis = data.surface.visibility ? data.surface.visibility[hi] : null;
-
-    if (
-      (humidity != null && humidity > 90) ||
-      (dpSpread != null && dpSpread < 3) ||
-      (vis != null && vis < 20)
-    ) {
-      // Mark the lowest altitude cells in this column
-      for (let r = Math.max(0, rows.length - 3); r < rows.length; r++) {
-        const cell = rows[r]?.children[colIdx + 1];
-        if (cell) cell.classList.add('fog-warning');
-      }
-    }
-  }
-}

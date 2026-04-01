@@ -42,6 +42,9 @@ export function initControls(container, callbacks) {
         <label class="toggle-label"><input type="checkbox" data-supp="dewpointSpread"> DP Spread</label>
         <label class="toggle-label"><input type="checkbox" data-supp="visibility"> Visibility</label>
         <label class="toggle-label"><input type="checkbox" data-supp="cloudCover"> Clouds</label>
+        <label class="toggle-label"><input type="checkbox" data-supp="cloudLow"> Low Cld</label>
+        <label class="toggle-label"><input type="checkbox" data-supp="cloudMid"> Mid Cld</label>
+        <label class="toggle-label"><input type="checkbox" data-supp="cloudHigh"> High Cld</label>
         <label class="toggle-label"><input type="checkbox" data-supp="thermals"> Thermals</label>
       </div>
 
@@ -92,13 +95,27 @@ export function initControls(container, callbacks) {
     'daylight-filter': 'showDaylightOnly',
     'hide-high-alt': 'hideHighAltitude',
     'wind-shear': 'showWindShear',
-    'fog-mode': 'showFogMode',
   };
   for (const [id, key] of Object.entries(checkboxIds)) {
     container.querySelector(`#${id}`).addEventListener('change', (e) => {
       callbacks.onToggle(key, e.target.checked);
     });
   }
+
+  // Fog mode: auto-enable related supplementary rows
+  container.querySelector('#fog-mode').addEventListener('change', (e) => {
+    callbacks.onToggle('showFogMode', e.target.checked);
+    if (e.target.checked) {
+      const fogSupp = ['dewpointSpread', 'temp', 'visibility'];
+      fogSupp.forEach((key) => {
+        const cb = container.querySelector(`[data-supp="${key}"]`);
+        if (cb && !cb.checked) {
+          cb.checked = true;
+        }
+      });
+      callbacks.onSuppChange(getSuppState(container));
+    }
+  });
 
   // Best hours
   container.querySelector('#best-hours').addEventListener('change', (e) => {
