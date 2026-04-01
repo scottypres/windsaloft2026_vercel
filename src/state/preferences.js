@@ -33,6 +33,7 @@ const DEFAULTS = {
     headerHeight: 48,
     fontSize: 11,
     altWidth: 70,
+    cellBorders: false,
   },
 };
 

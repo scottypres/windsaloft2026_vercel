@@ -1,4 +1,4 @@
-import { WIND_ALTITUDE_ROWS, CLOUD_ALTITUDE_ROWS } from './altitudes.js';
+import { GFS_ALTITUDE_ROWS, ICON_ALTITUDE_ROWS, CLOUD_ALTITUDE_ROWS } from './altitudes.js';
 
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -71,8 +71,9 @@ export function transformWeatherData(raw, model) {
     };
   });
 
-  // Build wind/temp altitude data
-  const altitudes = WIND_ALTITUDE_ROWS.map((row) => {
+  // Build wind/temp altitude data (model-specific rows)
+  const altitudeRowDefs = model === 'gfs' ? GFS_ALTITUDE_ROWS : ICON_ALTITUDE_ROWS;
+  const altitudes = altitudeRowDefs.map((row) => {
     const windSpeeds = hourly[row.windSpeedParam] || new Array(times.length).fill(null);
     const windDirs = hourly[row.windDirParam] || new Array(times.length).fill(null);
     const temps = hourly[row.tempParam] || new Array(times.length).fill(null);

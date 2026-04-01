@@ -232,10 +232,24 @@ function initLayoutSettings() {
     });
   }
 
+  // Cell borders toggle
+  const bordersCheckbox = document.getElementById('layout-cell-borders');
+  if (prefs.layout.cellBorders) bordersCheckbox.checked = true;
+  applyCellBorders(prefs.layout.cellBorders);
+  bordersCheckbox.addEventListener('change', () => {
+    prefs.layout.cellBorders = bordersCheckbox.checked;
+    applyCellBorders(bordersCheckbox.checked);
+    savePrefs(prefs);
+  });
+
   // Show the toggle button always (panel starts hidden)
   panel.classList.remove('hidden');
   inner.classList.add('hidden');
   applyLayout(prefs.layout);
+}
+
+function applyCellBorders(enabled) {
+  document.body.classList.toggle('cell-borders', !!enabled);
 }
 
 function initSettingsToggle() {

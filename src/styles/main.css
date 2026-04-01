@@ -483,17 +483,20 @@ body {
 
 /* Hour header sub-labels */
 .date-label {
-  font-size: 0.65rem;
+  font-size: var(--cell-font-size);
   color: var(--text-muted);
+  line-height: 1.1;
 }
 
 .dow-label {
-  font-size: 0.65rem;
+  font-size: var(--cell-font-size);
   font-weight: 600;
+  line-height: 1.1;
 }
 
 .hour-label {
-  font-size: 0.7rem;
+  font-size: var(--cell-font-size);
+  line-height: 1.1;
 }
 
 /* Data cells */
@@ -520,6 +523,12 @@ body {
 
 .wind-arrow {
   opacity: 0.85;
+}
+
+/* Cell borders (toggled via JS) */
+.cell-borders .cell,
+.cell-borders thead th {
+  border: 1px solid #000;
 }
 
 /* Day/night column styling */

@@ -37,7 +37,8 @@ const CLOUD_PRESSURE_LEVELS = [
 
 // Build ordered altitude row definitions for wind/temp views
 // Highest to lowest
-export const WIND_ALTITUDE_ROWS = [
+// Base altitude rows shared by both models (pressure levels + common surface)
+const BASE_ALTITUDE_ROWS = [
   ...WIND_TEMP_PRESSURE_LEVELS.map((hPa) => ({
     key: `${hPa}hPa`,
     feet: PRESSURE_TO_FEET[hPa],
@@ -49,40 +50,52 @@ export const WIND_ALTITUDE_ROWS = [
     cloudParam: `cloud_cover_${hPa}hPa`,
     isHighAltitude: PRESSURE_TO_FEET[hPa] > 5000,
   })),
-  {
-    key: '180m',
-    feet: SURFACE_TO_FEET[180],
-    type: 'surface',
-    meters: 180,
-    windSpeedParam: 'wind_speed_180m',
-    windDirParam: 'wind_direction_180m',
-    tempParam: 'temperature_180m',
-    cloudParam: null,
-    isHighAltitude: false,
-  },
-  {
-    key: '80m',
-    feet: SURFACE_TO_FEET[80],
-    type: 'surface',
-    meters: 80,
-    windSpeedParam: 'wind_speed_80m',
-    windDirParam: 'wind_direction_80m',
-    tempParam: 'temperature_80m',
-    cloudParam: null,
-    isHighAltitude: false,
-  },
-  {
-    key: '10m',
-    feet: SURFACE_TO_FEET[10],
-    type: 'surface',
-    meters: 10,
-    windSpeedParam: 'wind_speed_10m',
-    windDirParam: 'wind_direction_10m',
-    tempParam: 'temperature_2m',
-    cloudParam: null,
-    isHighAltitude: false,
-  },
 ];
+
+const SURFACE_80M = {
+  key: '80m',
+  feet: SURFACE_TO_FEET[80],
+  type: 'surface',
+  meters: 80,
+  windSpeedParam: 'wind_speed_80m',
+  windDirParam: 'wind_direction_80m',
+  tempParam: 'temperature_80m',
+  cloudParam: null,
+  isHighAltitude: false,
+};
+
+const SURFACE_10M = {
+  key: '10m',
+  feet: SURFACE_TO_FEET[10],
+  type: 'surface',
+  meters: 10,
+  windSpeedParam: 'wind_speed_10m',
+  windDirParam: 'wind_direction_10m',
+  tempParam: 'temperature_2m',
+  cloudParam: null,
+  isHighAltitude: false,
+};
+
+const SURFACE_180M = {
+  key: '180m',
+  feet: SURFACE_TO_FEET[180],
+  type: 'surface',
+  meters: 180,
+  windSpeedParam: 'wind_speed_180m',
+  windDirParam: 'wind_direction_180m',
+  tempParam: 'temperature_180m',
+  cloudParam: null,
+  isHighAltitude: false,
+};
+
+// GFS: no 180m/591ft row (data not available)
+export const GFS_ALTITUDE_ROWS = [...BASE_ALTITUDE_ROWS, SURFACE_80M, SURFACE_10M];
+
+// ICON: includes 180m/591ft row
+export const ICON_ALTITUDE_ROWS = [...BASE_ALTITUDE_ROWS, SURFACE_180M, SURFACE_80M, SURFACE_10M];
+
+// Default export for backward compat
+export const WIND_ALTITUDE_ROWS = ICON_ALTITUDE_ROWS;
 
 // Cloud view altitude rows (highest to lowest)
 export const CLOUD_ALTITUDE_ROWS = [
