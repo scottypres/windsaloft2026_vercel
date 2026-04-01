@@ -531,6 +531,11 @@ body {
   box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.6);
 }
 
+/* 33ft surface row separator */
+.surface-row td {
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 /* Day/night column styling */
 .night-col {
   opacity: 0.7;

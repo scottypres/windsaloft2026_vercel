@@ -88,7 +88,8 @@ export function renderTable(container, data, options = {}) {
 
   // Altitude rows
   for (const alt of altRows) {
-    html.push('<tr>');
+    const surfaceClass = alt.key === '10m' ? ' surface-row' : '';
+    html.push(`<tr class="${surfaceClass}">`);
     html.push(`<td class="alt-label">${alt.label}</td>`);
 
     for (const i of hourIndices) {
