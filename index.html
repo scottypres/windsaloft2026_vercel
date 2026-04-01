@@ -89,6 +89,21 @@
       <label class="toggle-label">
         <input type="checkbox" id="layout-cell-borders"> Cell Borders
       </label>
+      <div class="wind-colors-section">
+        <span class="section-title">Wind Colors (mph)</span>
+        <div class="wind-threshold-row">
+          <label class="inline-label">Blue ≤
+            <input type="number" id="wt-calm" value="8" min="1" max="50" class="small-input">
+          </label>
+          <label class="inline-label">Green ≤
+            <input type="number" id="wt-moderate" value="15" min="1" max="80" class="small-input">
+          </label>
+          <label class="inline-label">Red ≥
+            <input type="number" id="wt-strong" value="20" min="1" max="100" class="small-input">
+          </label>
+        </div>
+        <div id="wind-gradient-preview" class="wind-gradient-preview"></div>
+      </div>
     </div>
     <button id="layout-toggle" class="layout-toggle-btn">Layout Settings</button>
   </div>

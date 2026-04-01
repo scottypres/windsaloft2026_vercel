@@ -629,6 +629,51 @@ body {
   border-bottom: none;
 }
 
+/* === Wind Colors Section === */
+.wind-colors-section {
+  border-left: 1px solid var(--border);
+  padding-left: 0.75rem;
+}
+
+.wind-colors-section .section-title {
+  width: auto;
+  margin-bottom: 0.25rem;
+}
+
+.wind-threshold-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.wind-threshold-row .small-input {
+  width: 3rem;
+}
+
+.wind-gradient-preview {
+  height: 14px;
+  border-radius: 3px;
+  min-width: 200px;
+  position: relative;
+}
+
+.gradient-labels {
+  position: relative;
+  height: 100%;
+}
+
+.gradient-labels span {
+  position: absolute;
+  top: -1px;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0,0,0,0.8);
+  line-height: 14px;
+}
+
 /* === Settings Toggle === */
 .top-bar.hidden {
   display: none;

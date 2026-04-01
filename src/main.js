@@ -3,6 +3,7 @@ import { transformWeatherData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
+import { windColor } from './data/colors.js';
 import {
   loadPrefs,
   savePrefs,
@@ -256,10 +257,70 @@ function initLayoutSettings() {
     savePrefs(prefs);
   });
 
+  // Wind color thresholds
+  initWindColorControls();
+
   // Show the toggle button always (panel starts hidden)
   panel.classList.remove('hidden');
   inner.classList.add('hidden');
   applyLayout(prefs.layout);
+}
+
+function updateWindGradient() {
+  const preview = document.getElementById('wind-gradient-preview');
+  if (!preview) return;
+  const t = prefs.windThresholds;
+  const maxMph = Math.round(t.strong * 1.5);
+  const stops = [];
+  for (let mph = 0; mph <= maxMph; mph++) {
+    const pct = (mph / maxMph) * 100;
+    stops.push(`${windColor(mph, t)} ${pct}%`);
+  }
+  preview.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
+
+  // Add labels
+  const calmPct = (t.calm / maxMph) * 100;
+  const modPct = (t.moderate / maxMph) * 100;
+  const strongPct = (t.strong / maxMph) * 100;
+  preview.innerHTML = `<div class="gradient-labels">
+    <span style="left:${calmPct}%">${t.calm}</span>
+    <span style="left:${modPct}%">${t.moderate}</span>
+    <span style="left:${strongPct}%">${t.strong}</span>
+  </div>`;
+}
+
+function initWindColorControls() {
+  const calmInput = document.getElementById('wt-calm');
+  const modInput = document.getElementById('wt-moderate');
+  const strongInput = document.getElementById('wt-strong');
+
+  // Restore saved values
+  calmInput.value = prefs.windThresholds.calm;
+  modInput.value = prefs.windThresholds.moderate;
+  strongInput.value = prefs.windThresholds.strong;
+  updateWindGradient();
+
+  const onChange = () => {
+    prefs.windThresholds = {
+      calm: parseInt(calmInput.value) || 7,
+      moderate: parseInt(modInput.value) || 15,
+      strong: parseInt(strongInput.value) || 20,
+    };
+    savePrefs(prefs);
+    updateWindGradient();
+    // Also sync the controls panel thresholds
+    const tc = document.getElementById('threshold-calm');
+    const tm = document.getElementById('threshold-moderate');
+    const ts = document.getElementById('threshold-strong');
+    if (tc) tc.value = prefs.windThresholds.calm;
+    if (tm) tm.value = prefs.windThresholds.moderate;
+    if (ts) ts.value = prefs.windThresholds.strong;
+    rerender();
+  };
+
+  calmInput.addEventListener('change', onChange);
+  modInput.addEventListener('change', onChange);
+  strongInput.addEventListener('change', onChange);
 }
 
 function applyCellBorders(enabled) {
