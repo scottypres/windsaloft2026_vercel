@@ -61,6 +61,13 @@ function setupScrollSync() {
   icon.addEventListener('scroll', icon._scrollHandler);
 }
 
+function updateTableSectionVisibility() {
+  document.querySelectorAll('.table-section').forEach((section) => {
+    const container = section.querySelector('.table-container');
+    section.classList.toggle('empty', !container || !container.innerHTML.trim());
+  });
+}
+
 function rerender() {
   const gfsContainer = document.getElementById('gfs-table');
   const iconContainer = document.getElementById('icon-table');
@@ -84,6 +91,7 @@ function rerender() {
     iconContainer.innerHTML = '';
   }
 
+  updateTableSectionVisibility();
   setupScrollSync();
 }
 
@@ -152,6 +160,7 @@ async function renderAllLocations() {
     gfsContainer.innerHTML += `<div class="error">Error: ${err.message}</div>`;
   } finally {
     loading.classList.add('hidden');
+    updateTableSectionVisibility();
   }
 }
 

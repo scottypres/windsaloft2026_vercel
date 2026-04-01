@@ -411,6 +411,11 @@ body {
   flex-direction: column;
 }
 
+.table-section.empty {
+  flex: 0;
+  display: none;
+}
+
 .table-container {
   overflow: auto;
   flex: 1;
