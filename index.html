@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soar Forecaster</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪂</text></svg>">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1>Soar Forecaster</h1>
+      <p class="subtitle">Wind & weather aloft for paramotor and sailplane pilots</p>
+    </header>
+
+    <div class="top-bar">
+      <div id="location-panel"></div>
+      <div id="controls-panel"></div>
+    </div>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <span>Loading forecast data...</span>
+    </div>
+
+    <div class="tables-wrapper">
+      <div class="table-section">
+        <div id="gfs-table" class="table-container"></div>
+      </div>
+      <div class="table-section">
+        <div id="icon-table" class="table-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
