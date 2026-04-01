@@ -36,6 +36,9 @@ const DEFAULTS = {
     altWidth: 60,
     cellPad: 2,
     arrowSize: 10,
+    tableGap: 8,
+    borderWidth: 0.5,
+    dayBorderWidth: 3,
     cellBorders: false,
   },
 };

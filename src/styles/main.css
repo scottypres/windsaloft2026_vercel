@@ -25,6 +25,9 @@
   --alt-width: 60px;
   --cell-pad: 2px;
   --arrow-size: 10px;
+  --table-gap: 8px;
+  --border-width: 0.5px;
+  --day-border-width: 3px;
 }
 
 html {
@@ -400,7 +403,7 @@ body {
 .tables-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--table-gap);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -510,8 +513,8 @@ body {
   text-align: center;
   font-weight: 600;
   font-size: var(--cell-font-size);
-  border-right: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-right: var(--border-width) solid rgba(255,255,255,0.05);
+  border-bottom: var(--border-width) solid rgba(255,255,255,0.05);
   min-width: var(--cell-width);
   height: var(--cell-height);
   position: relative;
@@ -552,7 +555,7 @@ body {
 }
 
 .day-boundary {
-  border-left: 3px solid var(--accent) !important;
+  border-left: var(--day-border-width) solid var(--accent) !important;
 }
 
 /* Wind shear highlight */

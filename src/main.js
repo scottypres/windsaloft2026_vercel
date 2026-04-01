@@ -196,6 +196,9 @@ function applyLayout(layout) {
   root.style.setProperty('--alt-width', `${layout.altWidth}px`);
   root.style.setProperty('--cell-pad', `${layout.cellPad}px`);
   root.style.setProperty('--arrow-size', `${layout.arrowSize}px`);
+  root.style.setProperty('--table-gap', `${layout.tableGap}px`);
+  root.style.setProperty('--border-width', `${layout.borderWidth}px`);
+  root.style.setProperty('--day-border-width', `${layout.dayBorderWidth}px`);
 }
 
 function initLayoutSettings() {
@@ -216,6 +219,9 @@ function initLayoutSettings() {
     'layout-header-font-size': 'headerFontSize',
     'layout-cell-pad': 'cellPad',
     'layout-arrow-size': 'arrowSize',
+    'layout-table-gap': 'tableGap',
+    'layout-border-width': 'borderWidth',
+    'layout-day-border-width': 'dayBorderWidth',
   };
 
   for (const [id, key] of Object.entries(sliders)) {
@@ -230,7 +236,7 @@ function initLayoutSettings() {
 
     slider.addEventListener('input', () => {
       valSpan.textContent = slider.value;
-      prefs.layout[key] = parseInt(slider.value);
+      prefs.layout[key] = parseFloat(slider.value);
       applyLayout(prefs.layout);
     });
     slider.addEventListener('change', () => {
