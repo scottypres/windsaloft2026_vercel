@@ -77,6 +77,8 @@ function rerender() {
     return;
   }
 
+  document.querySelector('.tables-wrapper').classList.remove('all-locations-mode');
+
   // Sync scrolling when best hours is NOT active (same columns in both tables)
   syncEnabled = prefs.bestHoursThreshold == null;
 
@@ -122,12 +124,31 @@ async function loadWeather(lat, lon) {
   }
 }
 
+function setupAllLocationsScrollSync() {
+  const containers = document.querySelectorAll('.all-locations-item .table-container');
+  let isSyncing = false;
+
+  containers.forEach((container) => {
+    container.addEventListener('scroll', () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      const scrollLeft = container.scrollLeft;
+      containers.forEach((other) => {
+        if (other !== container) other.scrollLeft = scrollLeft;
+      });
+      isSyncing = false;
+    });
+  });
+}
+
 async function renderAllLocations() {
   const gfsContainer = document.getElementById('gfs-table');
   const iconContainer = document.getElementById('icon-table');
   const loading = document.getElementById('loading');
+  const wrapper = document.querySelector('.tables-wrapper');
 
   iconContainer.innerHTML = '';
+  wrapper.classList.add('all-locations-mode');
 
   if (prefs.savedLocations.length === 0) {
     gfsContainer.innerHTML = '<div class="no-data">No saved locations to display.</div>';
@@ -142,20 +163,21 @@ async function renderAllLocations() {
       const raw = await fetchGFS(loc.lat, loc.lon, prefs.gfsDays);
       const data = transformWeatherData(raw, 'gfs');
 
-      const wrapper = document.createElement('div');
-      wrapper.className = 'all-locations-item';
+      const item = document.createElement('div');
+      item.className = 'all-locations-item';
       const header = document.createElement('h3');
       header.className = 'location-header';
       header.textContent = loc.shortName;
-      wrapper.appendChild(header);
+      item.appendChild(header);
 
       const tableDiv = document.createElement('div');
       tableDiv.className = 'table-container';
-      wrapper.appendChild(tableDiv);
-      gfsContainer.appendChild(wrapper);
+      item.appendChild(tableDiv);
+      gfsContainer.appendChild(item);
 
       renderTable(tableDiv, data, getTableOptions());
     }
+    setupAllLocationsScrollSync();
   } catch (err) {
     gfsContainer.innerHTML += `<div class="error">Error: ${err.message}</div>`;
   } finally {
