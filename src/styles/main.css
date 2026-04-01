@@ -528,7 +528,7 @@ body {
 /* Cell borders (toggled via JS) */
 .cell-borders .cell,
 .cell-borders thead th {
-  border: 1px solid #000;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.6);
 }
 
 /* Day/night column styling */
