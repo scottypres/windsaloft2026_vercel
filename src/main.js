@@ -195,6 +195,7 @@ function applyLayout(layout) {
   root.style.setProperty('--header-font-size', `${layout.headerFontSize}px`);
   root.style.setProperty('--alt-width', `${layout.altWidth}px`);
   root.style.setProperty('--cell-pad', `${layout.cellPad}px`);
+  root.style.setProperty('--arrow-size', `${layout.arrowSize}px`);
 }
 
 function initLayoutSettings() {
@@ -214,6 +215,7 @@ function initLayoutSettings() {
     'layout-font-size': 'fontSize',
     'layout-header-font-size': 'headerFontSize',
     'layout-cell-pad': 'cellPad',
+    'layout-arrow-size': 'arrowSize',
   };
 
   for (const [id, key] of Object.entries(sliders)) {

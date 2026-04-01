@@ -35,6 +35,7 @@ const DEFAULTS = {
     headerFontSize: 9,
     altWidth: 60,
     cellPad: 2,
+    arrowSize: 10,
     cellBorders: false,
   },
 };

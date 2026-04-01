@@ -24,6 +24,7 @@
   --header-font-size: 9px;
   --alt-width: 60px;
   --cell-pad: 2px;
+  --arrow-size: 10px;
 }
 
 html {
@@ -517,16 +518,21 @@ body {
 }
 
 .cell-value {
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .cell-arrow {
-  line-height: 1;
-  margin-top: -1px;
+  line-height: 0;
+  display: block;
+  height: var(--arrow-size);
 }
 
 .wind-arrow {
+  width: var(--arrow-size);
+  height: var(--arrow-size);
   opacity: 0.85;
+  display: block;
+  margin: 0 auto;
 }
 
 /* Cell borders (toggled via JS) */
