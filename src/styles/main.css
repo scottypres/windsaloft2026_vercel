@@ -19,9 +19,10 @@
   /* Layout (overridden by JS) */
   --cell-width: 34px;
   --cell-height: 28px;
-  --header-height: 48px;
+  --header-height: 42px;
   --cell-font-size: 11px;
-  --alt-width: 70px;
+  --header-font-size: 9px;
+  --alt-width: 60px;
 }
 
 html {
@@ -439,12 +440,14 @@ body {
   top: 0;
   z-index: 2;
   background: var(--bg-panel);
-  border-bottom: 2px solid var(--border);
-  padding: 0.15rem 0.1rem;
+  border-bottom: 1px solid var(--border);
+  padding: 0;
   text-align: center;
   font-weight: 500;
   min-width: var(--cell-width);
   height: var(--header-height);
+  line-height: 1;
+  vertical-align: middle;
 }
 
 /* Corner cell: sticky in both directions */
@@ -454,8 +457,8 @@ body {
   z-index: 3 !important;
   background: var(--bg-panel) !important;
   font-weight: 700;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.5rem !important;
+  font-size: var(--header-font-size);
+  padding: 0 0.2rem !important;
   min-width: var(--alt-width);
 }
 
@@ -467,9 +470,9 @@ body {
   background: var(--bg-panel);
   font-weight: 600;
   font-size: var(--cell-font-size);
-  padding: 0.1rem 0.4rem;
+  padding: 0 0.2rem;
   text-align: right;
-  border-right: 2px solid var(--border);
+  border-right: 1px solid var(--border);
   white-space: nowrap;
   min-width: var(--alt-width);
 }
@@ -483,25 +486,25 @@ body {
 
 /* Hour header sub-labels */
 .date-label {
-  font-size: var(--cell-font-size);
+  font-size: var(--header-font-size);
   color: var(--text-muted);
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .dow-label {
-  font-size: var(--cell-font-size);
+  font-size: var(--header-font-size);
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .hour-label {
-  font-size: var(--cell-font-size);
-  line-height: 1.1;
+  font-size: var(--header-font-size);
+  line-height: 1;
 }
 
 /* Data cells */
 .cell {
-  padding: 0.1rem 0.1rem;
+  padding: 0;
   text-align: center;
   font-weight: 600;
   font-size: var(--cell-font-size);

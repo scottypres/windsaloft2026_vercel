@@ -192,6 +192,7 @@ function applyLayout(layout) {
   root.style.setProperty('--cell-height', `${layout.cellHeight}px`);
   root.style.setProperty('--header-height', `${layout.headerHeight}px`);
   root.style.setProperty('--cell-font-size', `${layout.fontSize}px`);
+  root.style.setProperty('--header-font-size', `${layout.headerFontSize}px`);
   root.style.setProperty('--alt-width', `${layout.altWidth}px`);
 }
 
@@ -208,8 +209,9 @@ function initLayoutSettings() {
     'layout-cell-width': 'cellWidth',
     'layout-cell-height': 'cellHeight',
     'layout-header-height': 'headerHeight',
-    'layout-font-size': 'fontSize',
     'layout-alt-width': 'altWidth',
+    'layout-font-size': 'fontSize',
+    'layout-header-font-size': 'headerFontSize',
   };
 
   for (const [id, key] of Object.entries(sliders)) {

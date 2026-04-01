@@ -30,9 +30,10 @@ const DEFAULTS = {
   layout: {
     cellWidth: 34,
     cellHeight: 28,
-    headerHeight: 48,
+    headerHeight: 42,
     fontSize: 11,
-    altWidth: 70,
+    headerFontSize: 9,
+    altWidth: 60,
     cellBorders: false,
   },
 };
