@@ -30,6 +30,37 @@ function getTableOptions() {
   };
 }
 
+// Synchronized scrolling between GFS and ICON tables
+let syncEnabled = false;
+let syncing = false;
+
+function setupScrollSync() {
+  const gfs = document.getElementById('gfs-table');
+  const icon = document.getElementById('icon-table');
+
+  // Remove old listeners by replacing elements (simplest way)
+  // We re-attach every rerender, so just use a flag
+  gfs._scrollHandler && gfs.removeEventListener('scroll', gfs._scrollHandler);
+  icon._scrollHandler && icon.removeEventListener('scroll', icon._scrollHandler);
+
+  if (!syncEnabled) return;
+
+  gfs._scrollHandler = () => {
+    if (syncing) return;
+    syncing = true;
+    icon.scrollLeft = gfs.scrollLeft;
+    syncing = false;
+  };
+  icon._scrollHandler = () => {
+    if (syncing) return;
+    syncing = true;
+    gfs.scrollLeft = icon.scrollLeft;
+    syncing = false;
+  };
+  gfs.addEventListener('scroll', gfs._scrollHandler);
+  icon.addEventListener('scroll', icon._scrollHandler);
+}
+
 function rerender() {
   const gfsContainer = document.getElementById('gfs-table');
   const iconContainer = document.getElementById('icon-table');
@@ -38,6 +69,9 @@ function rerender() {
     renderAllLocations();
     return;
   }
+
+  // Sync scrolling when best hours is NOT active (same columns in both tables)
+  syncEnabled = prefs.bestHoursThreshold == null;
 
   if (gfsData) {
     renderTable(gfsContainer, gfsData, getTableOptions());
@@ -49,6 +83,8 @@ function rerender() {
   } else {
     iconContainer.innerHTML = '';
   }
+
+  setupScrollSync();
 }
 
 async function loadWeather(lat, lon) {

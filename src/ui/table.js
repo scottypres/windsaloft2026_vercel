@@ -110,7 +110,7 @@ export function renderTable(container, data, options = {}) {
         const arrow = windArrow(dir);
         html.push(
           `<td class="cell ${dayClass}${boundary}" style="background:${bg};color:${color}" data-alt="${alt.key}" data-hour="${i}">` +
-            `<span class="cell-value">${val}</span>${arrow}</td>`
+            `<div class="cell-value">${val}</div>${arrow ? `<div class="cell-arrow">${arrow}</div>` : ''}</td>`
         );
       } else if (view === 'temp') {
         const t = alt.temp ? alt.temp[i] : null;
