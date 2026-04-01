@@ -5,7 +5,7 @@ const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 function formatHour(isoStr) {
   const d = new Date(isoStr);
   let h = d.getHours();
-  const ampm = h >= 12 ? 'PM' : 'AM';
+  const ampm = h >= 12 ? 'P' : 'A';
   h = h % 12 || 12;
   return `${h}${ampm}`;
 }
