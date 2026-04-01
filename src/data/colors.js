@@ -61,18 +61,17 @@ export function tempColor(temp) {
   return rgb(lerp(orange, darkRed, t));
 }
 
-// Cloud cover: white (0%) → grey/black (100%)
-// Returns rgba for overlay on white background
+// Cloud cover: white background, gray intensity based on coverage
 export function cloudColor(cover) {
-  if (cover == null) return '#555';
-  const opacity = Math.min(0.75, (cover / 100) * 0.75);
-  return `rgba(0, 0, 0, ${opacity})`;
+  if (cover == null) return '#ddd';
+  const gray = Math.round(255 - (cover / 100) * 200);
+  return `rgb(${gray},${gray},${gray})`;
 }
 
-// Cloud cell text color (light text on dark backgrounds)
+// Cloud cell text color (dark text on light, lighter on dark)
 export function cloudTextColor(cover) {
-  if (cover == null) return '#ccc';
-  return cover > 50 ? '#fff' : '#111';
+  if (cover == null) return '#888';
+  return cover > 60 ? '#444' : '#111';
 }
 
 // CAPE: white→lightblue→green→yellow→red
