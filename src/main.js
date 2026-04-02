@@ -3,6 +3,7 @@ import { transformWeatherData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
+import { enableMomentumScroll } from './ui/momentum.js';
 import { windColor } from './data/colors.js';
 import {
   loadPrefs,
@@ -93,6 +94,8 @@ function rerender() {
 
   updateTableSectionVisibility();
   setupScrollSync();
+  enableMomentumScroll(gfsContainer);
+  enableMomentumScroll(iconContainer);
 }
 
 async function loadWeather(lat, lon) {
@@ -174,6 +177,7 @@ async function renderAllLocations() {
       gfsContainer.appendChild(item);
 
       renderTable(tableDiv, data, getTableOptions());
+      enableMomentumScroll(tableDiv);
     }
     setupAllLocationsScrollSync();
   } catch (err) {

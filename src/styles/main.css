@@ -402,6 +402,8 @@ body {
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-surface);
+  cursor: grab;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* When only one table is visible, give it more room */
