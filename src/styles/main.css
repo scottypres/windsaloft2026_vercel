@@ -681,11 +681,12 @@ body {
   width: 100%;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
-  padding: 0.4rem 0.75rem;
-  display: flex;
-  gap: 0.25rem;
-  align-items: flex-start;
-  overflow-x: auto;
+  padding: 0.5rem 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.4rem;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
 .bottom-settings-inner.hidden {
@@ -694,7 +695,6 @@ body {
 
 /* Collapsible settings sections */
 .settings-section {
-  flex: 0 0 auto;
   min-width: 0;
 }
 
@@ -730,9 +730,8 @@ body {
 .section-body {
   padding: 0.4rem 0.25rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .section-body.hidden {
@@ -753,16 +752,8 @@ body {
     flex-direction: column;
   }
 
-  .controls-panel {
-    flex-direction: column;
-  }
-
-  .controls-section {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.5rem;
-    padding-right: 0;
-    width: 100%;
+  .bottom-settings-inner {
+    grid-template-columns: 1fr 1fr;
   }
 
   .table-container {
