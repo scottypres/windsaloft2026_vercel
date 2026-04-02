@@ -295,20 +295,6 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
   }
 
   if (view === 'clouds') {
-    // Thermals row (GFS only, 10am-5pm)
-    if (shown.thermals && model === 'gfs' && s.boundaryLayerHeight) {
-      rows.push(makeRow('Thermals ft', hourIndices, (i) => {
-        const time = data.hours[i].time;
-        const hour = new Date(time).getHours();
-        const inThermalWindow = hour >= 10 && hour <= 17;
-        const v = s.boundaryLayerHeight[i];
-        const val = inThermalWindow && v != null ? `${Math.round(v * 3.28084)}` : '';
-        const bg = inThermalWindow && v != null ? (v * 3.28084 > 3000 ? '#66bb6a' : '#f0c040') : 'transparent';
-        const color = bg === 'transparent' ? '#888' : textColorFor(bg);
-        return { val, bg, color };
-      }));
-    }
-
     // High/Mid/Low cloud summary rows
     if (shown.cloudHigh !== false) {
       rows.push(makeRow('High Clouds', hourIndices, (i) => {
