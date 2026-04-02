@@ -39,8 +39,6 @@ function setupScrollSync() {
   const gfs = document.getElementById('gfs-table');
   const icon = document.getElementById('icon-table');
 
-  // Remove old listeners by replacing elements (simplest way)
-  // We re-attach every rerender, so just use a flag
   gfs._scrollHandler && gfs.removeEventListener('scroll', gfs._scrollHandler);
   icon._scrollHandler && icon.removeEventListener('scroll', icon._scrollHandler);
 
@@ -80,7 +78,6 @@ function rerender() {
 
   document.querySelector('.tables-wrapper').classList.remove('all-locations-mode');
 
-  // Sync scrolling when best hours is NOT active (same columns in both tables)
   syncEnabled = prefs.bestHoursThreshold == null;
 
   if (gfsData) {
@@ -203,15 +200,25 @@ function applyLayout(layout) {
   root.style.setProperty('--day-border-width', `${layout.dayBorderWidth}px`);
 }
 
-function initLayoutSettings() {
-  const panel = document.getElementById('layout-settings');
-  const toggleBtn = document.getElementById('layout-toggle');
-  const inner = panel.querySelector('.layout-settings-inner');
+function initBottomSettings() {
+  const panel = document.getElementById('bottom-settings');
+  const toggleBtn = document.getElementById('bottom-settings-toggle');
+  const inner = panel.querySelector('.bottom-settings-inner');
 
   toggleBtn.addEventListener('click', () => {
     inner.classList.toggle('hidden');
   });
 
+  // Collapsible section headers
+  panel.querySelectorAll('.section-header').forEach((header) => {
+    header.addEventListener('click', () => {
+      const body = header.nextElementSibling;
+      body.classList.toggle('hidden');
+      header.classList.toggle('collapsed');
+    });
+  });
+
+  // Layout sliders
   const sliders = {
     'layout-cell-width': 'cellWidth',
     'layout-cell-height': 'cellHeight',
@@ -231,7 +238,6 @@ function initLayoutSettings() {
     const slider = document.getElementById(id);
     const valSpan = document.getElementById(`${id}-val`);
 
-    // Restore saved value
     if (prefs.layout[key] != null) {
       slider.value = prefs.layout[key];
       valSpan.textContent = prefs.layout[key];
@@ -260,9 +266,18 @@ function initLayoutSettings() {
   // Wind color thresholds
   initWindColorControls();
 
-  // Show the toggle button always (panel starts hidden)
+  // Show panel, start with inner collapsed
   panel.classList.remove('hidden');
   inner.classList.add('hidden');
+
+  // Start all section bodies collapsed
+  panel.querySelectorAll('.section-body').forEach((body) => {
+    body.classList.add('hidden');
+  });
+  panel.querySelectorAll('.section-header').forEach((h) => {
+    h.classList.add('collapsed');
+  });
+
   applyLayout(prefs.layout);
 }
 
@@ -278,7 +293,6 @@ function updateWindGradient() {
   }
   preview.style.background = `linear-gradient(to right, ${stops.join(', ')})`;
 
-  // Add labels
   const calmPct = (t.calm / maxMph) * 100;
   const modPct = (t.moderate / maxMph) * 100;
   const strongPct = (t.strong / maxMph) * 100;
@@ -294,7 +308,6 @@ function initWindColorControls() {
   const modInput = document.getElementById('wt-moderate');
   const strongInput = document.getElementById('wt-strong');
 
-  // Restore saved values
   calmInput.value = prefs.windThresholds.calm;
   modInput.value = prefs.windThresholds.moderate;
   strongInput.value = prefs.windThresholds.strong;
@@ -308,13 +321,6 @@ function initWindColorControls() {
     };
     savePrefs(prefs);
     updateWindGradient();
-    // Also sync the controls panel thresholds
-    const tc = document.getElementById('threshold-calm');
-    const tm = document.getElementById('threshold-moderate');
-    const ts = document.getElementById('threshold-strong');
-    if (tc) tc.value = prefs.windThresholds.calm;
-    if (tm) tm.value = prefs.windThresholds.moderate;
-    if (ts) ts.value = prefs.windThresholds.strong;
     rerender();
   };
 
@@ -333,7 +339,7 @@ function initSettingsToggle() {
 
   const updateVisibility = () => {
     topBar.classList.toggle('hidden', !prefs.settingsVisible);
-    btn.textContent = prefs.settingsVisible ? 'Hide Settings' : 'Settings';
+    btn.textContent = prefs.settingsVisible ? 'Hide' : 'Locations';
   };
 
   btn.addEventListener('click', () => {
@@ -346,9 +352,8 @@ function initSettingsToggle() {
 }
 
 function init() {
-  // Settings toggle & layout
   initSettingsToggle();
-  initLayoutSettings();
+  initBottomSettings();
 
   // Init location UI
   locationUI = initLocationUI(document.getElementById('location-panel'), {
@@ -370,8 +375,8 @@ function init() {
 
   locationUI.renderSavedLocations(prefs.savedLocations);
 
-  // Init controls
-  initControls(document.getElementById('controls-panel'), {
+  // Init controls (view toggles + filter/supp/forecast wiring)
+  initControls({
     onViewChange(view) {
       prefs.view = view;
       savePrefs(prefs);
@@ -387,16 +392,10 @@ function init() {
       savePrefs(prefs);
       rerender();
     },
-    onThresholdsChange(thresholds) {
-      prefs.windThresholds = thresholds;
-      savePrefs(prefs);
-      rerender();
-    },
     onForecastDaysChange(model, days) {
       if (model === 'gfs') prefs.gfsDays = days;
       else prefs.iconDays = days;
       savePrefs(prefs);
-      // Re-fetch with new day count
       if (prefs.lastLocation) {
         loadWeather(prefs.lastLocation.lat, prefs.lastLocation.lon);
       }
@@ -417,7 +416,7 @@ function init() {
   });
 
   // Restore control state
-  restoreControlState(document.getElementById('controls-panel'), prefs);
+  restoreControlState(prefs);
 
   // Auto-load last location
   if (prefs.lastLocation) {

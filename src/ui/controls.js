@@ -1,87 +1,7 @@
-// Build the control panel UI and wire up events
-export function initControls(container, callbacks) {
-  container.innerHTML = `
-    <div class="controls-panel">
-      <div class="controls-section">
-        <div class="view-toggles">
-          <button class="view-btn active" data-view="wind">Wind Speed</button>
-          <button class="view-btn" data-view="temp">Temperature</button>
-          <button class="view-btn" data-view="clouds">Clouds + Thermals</button>
-        </div>
-      </div>
-
-      <div class="controls-section">
-        <label class="toggle-label">
-          <input type="checkbox" id="daylight-filter"> Daylight Only
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="hide-high-alt"> Hide &gt;5000ft
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="wind-shear"> Wind Shear
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="fog-mode"> Fog Mode
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="best-hours"> Best Hours
-          <input type="number" id="best-hours-threshold" value="15" min="1" max="50" class="small-input">
-          mph
-        </label>
-      </div>
-
-      <div class="controls-section supp-toggles" id="supp-toggles">
-        <span class="section-title">Extra Rows:</span>
-        <label class="toggle-label"><input type="checkbox" data-supp="gusts"> Gusts</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="cape"> CAPE</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="liftedIndex"> Lift Index</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="precipProb"> Precip %</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="precipInches"> Precip in</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="temp"> Temp</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="humidity"> Humidity</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="dewpointSpread"> DP Spread</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="visibility"> Visibility</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="cloudCover"> Clouds</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="cloudLow"> Low Cld</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="cloudMid"> Mid Cld</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="cloudHigh"> High Cld</label>
-        <label class="toggle-label"><input type="checkbox" data-supp="thermals"> Thermals</label>
-      </div>
-
-      <div class="controls-section">
-        <span class="section-title">Wind Colors (mph):</span>
-        <label class="inline-label">Calm ≤
-          <input type="number" id="threshold-calm" value="7" min="1" max="50" class="small-input">
-        </label>
-        <label class="inline-label">Moderate ≤
-          <input type="number" id="threshold-moderate" value="15" min="1" max="80" class="small-input">
-        </label>
-        <label class="inline-label">Strong ≥
-          <input type="number" id="threshold-strong" value="20" min="1" max="100" class="small-input">
-        </label>
-      </div>
-
-      <div class="controls-section">
-        <span class="section-title">Forecast Days:</span>
-        <label class="inline-label">GFS:
-          <input type="range" id="gfs-days" min="1" max="14" value="7" class="range-input">
-          <span id="gfs-days-val">7</span>
-        </label>
-        <label class="inline-label">ICON:
-          <input type="range" id="icon-days" min="1" max="7" value="5" class="range-input">
-          <span id="icon-days-val">5</span>
-        </label>
-      </div>
-
-      <div class="controls-section">
-        <button id="show-all-locations" class="action-btn">Show All Locations</button>
-        <button id="reset-defaults" class="action-btn danger-btn">Reset Defaults</button>
-      </div>
-    </div>
-  `;
-
-  // Wire events
-  const viewBtns = container.querySelectorAll('.view-btn');
+// Wire up all settings controls (now in bottom panel + header view toggles)
+export function initControls(callbacks) {
+  // View toggles in the header
+  const viewBtns = document.querySelectorAll('#header-view-toggles .view-btn');
   viewBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       viewBtns.forEach((b) => b.classList.remove('active'));
@@ -90,67 +10,55 @@ export function initControls(container, callbacks) {
     });
   });
 
-  // Checkbox toggles
+  // Filter checkboxes
   const checkboxIds = {
     'daylight-filter': 'showDaylightOnly',
     'hide-high-alt': 'hideHighAltitude',
     'wind-shear': 'showWindShear',
   };
   for (const [id, key] of Object.entries(checkboxIds)) {
-    container.querySelector(`#${id}`).addEventListener('change', (e) => {
+    document.getElementById(id).addEventListener('change', (e) => {
       callbacks.onToggle(key, e.target.checked);
     });
   }
 
   // Fog mode: auto-enable related supplementary rows
-  container.querySelector('#fog-mode').addEventListener('change', (e) => {
+  document.getElementById('fog-mode').addEventListener('change', (e) => {
     callbacks.onToggle('showFogMode', e.target.checked);
     if (e.target.checked) {
-      const fogSupp = ['dewpointSpread', 'temp', 'visibility'];
-      fogSupp.forEach((key) => {
-        const cb = container.querySelector(`[data-supp="${key}"]`);
+      ['dewpointSpread', 'temp', 'visibility'].forEach((key) => {
+        const cb = document.querySelector(`[data-supp="${key}"]`);
         if (cb && !cb.checked) {
           cb.checked = true;
         }
       });
-      callbacks.onSuppChange(getSuppState(container));
+      callbacks.onSuppChange(getSuppState());
     }
   });
 
   // Best hours
-  container.querySelector('#best-hours').addEventListener('change', (e) => {
+  document.getElementById('best-hours').addEventListener('change', (e) => {
     const threshold = e.target.checked
-      ? parseInt(container.querySelector('#best-hours-threshold').value) || 15
+      ? parseInt(document.getElementById('best-hours-threshold').value) || 15
       : null;
     callbacks.onToggle('bestHoursThreshold', threshold);
   });
-  container.querySelector('#best-hours-threshold').addEventListener('change', (e) => {
-    if (container.querySelector('#best-hours').checked) {
+  document.getElementById('best-hours-threshold').addEventListener('change', (e) => {
+    if (document.getElementById('best-hours').checked) {
       callbacks.onToggle('bestHoursThreshold', parseInt(e.target.value) || 15);
     }
   });
 
   // Supplementary row toggles
-  container.querySelectorAll('[data-supp]').forEach((cb) => {
+  document.querySelectorAll('[data-supp]').forEach((cb) => {
     cb.addEventListener('change', () => {
-      callbacks.onSuppChange(getSuppState(container));
-    });
-  });
-
-  // Wind thresholds
-  ['threshold-calm', 'threshold-moderate', 'threshold-strong'].forEach((id) => {
-    container.querySelector(`#${id}`).addEventListener('change', () => {
-      callbacks.onThresholdsChange({
-        calm: parseInt(container.querySelector('#threshold-calm').value) || 7,
-        moderate: parseInt(container.querySelector('#threshold-moderate').value) || 15,
-        strong: parseInt(container.querySelector('#threshold-strong').value) || 20,
-      });
+      callbacks.onSuppChange(getSuppState());
     });
   });
 
   // Forecast day sliders
-  const gfsDays = container.querySelector('#gfs-days');
-  const gfsDaysVal = container.querySelector('#gfs-days-val');
+  const gfsDays = document.getElementById('gfs-days');
+  const gfsDaysVal = document.getElementById('gfs-days-val');
   gfsDays.addEventListener('input', () => {
     gfsDaysVal.textContent = gfsDays.value;
   });
@@ -158,8 +66,8 @@ export function initControls(container, callbacks) {
     callbacks.onForecastDaysChange('gfs', parseInt(gfsDays.value));
   });
 
-  const iconDays = container.querySelector('#icon-days');
-  const iconDaysVal = container.querySelector('#icon-days-val');
+  const iconDays = document.getElementById('icon-days');
+  const iconDaysVal = document.getElementById('icon-days-val');
   iconDays.addEventListener('input', () => {
     iconDaysVal.textContent = iconDays.value;
   });
@@ -168,31 +76,31 @@ export function initControls(container, callbacks) {
   });
 
   // Show all locations
-  container.querySelector('#show-all-locations').addEventListener('click', () => {
+  document.getElementById('show-all-locations').addEventListener('click', () => {
     callbacks.onShowAllLocations();
   });
 
   // Reset
-  container.querySelector('#reset-defaults').addEventListener('click', () => {
+  document.getElementById('reset-defaults').addEventListener('click', () => {
     callbacks.onReset();
   });
 }
 
-function getSuppState(container) {
+function getSuppState() {
   const state = {};
-  container.querySelectorAll('[data-supp]').forEach((cb) => {
+  document.querySelectorAll('[data-supp]').forEach((cb) => {
     state[cb.dataset.supp] = cb.checked;
   });
   return state;
 }
 
 // Restore UI state from preferences
-export function restoreControlState(container, prefs) {
+export function restoreControlState(prefs) {
   if (!prefs) return;
 
   // View
   if (prefs.view) {
-    container.querySelectorAll('.view-btn').forEach((btn) => {
+    document.querySelectorAll('#header-view-toggles .view-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.view === prefs.view);
     });
   }
@@ -205,38 +113,31 @@ export function restoreControlState(container, prefs) {
     showFogMode: 'fog-mode',
   };
   for (const [key, id] of Object.entries(checkboxMap)) {
-    const el = container.querySelector(`#${id}`);
+    const el = document.getElementById(id);
     if (el && prefs[key] != null) el.checked = prefs[key];
   }
 
   // Best hours
   if (prefs.bestHoursThreshold != null) {
-    container.querySelector('#best-hours').checked = true;
-    container.querySelector('#best-hours-threshold').value = prefs.bestHoursThreshold;
+    document.getElementById('best-hours').checked = true;
+    document.getElementById('best-hours-threshold').value = prefs.bestHoursThreshold;
   }
 
   // Supplementary rows
   if (prefs.supplementaryRows) {
     for (const [key, val] of Object.entries(prefs.supplementaryRows)) {
-      const el = container.querySelector(`[data-supp="${key}"]`);
+      const el = document.querySelector(`[data-supp="${key}"]`);
       if (el) el.checked = val;
     }
   }
 
-  // Thresholds
-  if (prefs.windThresholds) {
-    container.querySelector('#threshold-calm').value = prefs.windThresholds.calm;
-    container.querySelector('#threshold-moderate').value = prefs.windThresholds.moderate;
-    container.querySelector('#threshold-strong').value = prefs.windThresholds.strong;
-  }
-
   // Forecast days
   if (prefs.gfsDays) {
-    container.querySelector('#gfs-days').value = prefs.gfsDays;
-    container.querySelector('#gfs-days-val').textContent = prefs.gfsDays;
+    document.getElementById('gfs-days').value = prefs.gfsDays;
+    document.getElementById('gfs-days-val').textContent = prefs.gfsDays;
   }
   if (prefs.iconDays) {
-    container.querySelector('#icon-days').value = prefs.iconDays;
-    container.querySelector('#icon-days-val').textContent = prefs.iconDays;
+    document.getElementById('icon-days').value = prefs.iconDays;
+    document.getElementById('icon-days-val').textContent = prefs.iconDays;
   }
 }
