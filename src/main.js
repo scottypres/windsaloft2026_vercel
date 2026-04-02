@@ -313,17 +313,29 @@ function initWindColorControls() {
   strongInput.value = prefs.windThresholds.strong;
   updateWindGradient();
 
+  const readThresholds = () => ({
+    calm: parseInt(calmInput.value) || 7,
+    moderate: parseInt(modInput.value) || 15,
+    strong: parseInt(strongInput.value) || 20,
+  });
+
+  // Live preview as user types
+  const onInput = () => {
+    prefs.windThresholds = readThresholds();
+    updateWindGradient();
+  };
+
+  // Save + rerender on commit
   const onChange = () => {
-    prefs.windThresholds = {
-      calm: parseInt(calmInput.value) || 7,
-      moderate: parseInt(modInput.value) || 15,
-      strong: parseInt(strongInput.value) || 20,
-    };
+    prefs.windThresholds = readThresholds();
     savePrefs(prefs);
     updateWindGradient();
     rerender();
   };
 
+  calmInput.addEventListener('input', onInput);
+  modInput.addEventListener('input', onInput);
+  strongInput.addEventListener('input', onInput);
   calmInput.addEventListener('change', onChange);
   modInput.addEventListener('change', onChange);
   strongInput.addEventListener('change', onChange);
