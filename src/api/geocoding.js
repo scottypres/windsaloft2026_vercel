@@ -1,4 +1,5 @@
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
 
 let debounceTimer = null;
 
@@ -35,6 +36,26 @@ export function searchLocations(query) {
       }
     }, 500);
   });
+}
+
+export async function reverseGeocode(lat, lon) {
+  const params = new URLSearchParams({
+    format: 'json',
+    lat: lat.toString(),
+    lon: lon.toString(),
+    addressdetails: '1',
+  });
+  const resp = await fetch(`${NOMINATIM_REVERSE_URL}?${params}`, {
+    headers: { 'User-Agent': 'SoarForecaster/1.0' },
+  });
+  if (!resp.ok) throw new Error(`Reverse geocoding error: ${resp.status}`);
+  const r = await resp.json();
+  return {
+    name: r.display_name,
+    shortName: buildShortName(r),
+    lat,
+    lon,
+  };
 }
 
 function buildShortName(result) {

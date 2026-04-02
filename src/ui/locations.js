@@ -1,4 +1,4 @@
-import { searchLocations } from '../api/geocoding.js';
+import { searchLocations, reverseGeocode } from '../api/geocoding.js';
 
 const MAX_SAVED = 10;
 
@@ -6,7 +6,10 @@ export function initLocationUI(container, callbacks) {
   container.innerHTML = `
     <div class="location-panel">
       <div class="search-wrapper">
-        <input type="text" id="location-search" placeholder="Search location..." autocomplete="off">
+        <div class="search-row">
+          <input type="text" id="location-search" placeholder="Search location..." autocomplete="off">
+          <button id="gps-btn" class="gps-btn" title="Use current location">GPS</button>
+        </div>
         <div id="search-results" class="search-results hidden"></div>
       </div>
       <div id="current-location" class="current-location"></div>
@@ -23,8 +26,43 @@ export function initLocationUI(container, callbacks) {
   const searchInput = container.querySelector('#location-search');
   const resultsDiv = container.querySelector('#search-results');
   const saveBtn = container.querySelector('#save-location-btn');
+  const gpsBtn = container.querySelector('#gps-btn');
 
   let currentLocation = null;
+
+  gpsBtn.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    gpsBtn.textContent = '...';
+    gpsBtn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const loc = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          selectLocation(loc);
+        } catch {
+          // Fallback: use coords directly
+          selectLocation({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            shortName: `${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`,
+            name: `${pos.coords.latitude}, ${pos.coords.longitude}`,
+          });
+        } finally {
+          gpsBtn.textContent = 'GPS';
+          gpsBtn.disabled = false;
+        }
+      },
+      () => {
+        alert('Unable to get your location. Please check your browser permissions.');
+        gpsBtn.textContent = 'GPS';
+        gpsBtn.disabled = false;
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  });
 
   searchInput.addEventListener('input', async () => {
     const query = searchInput.value;
