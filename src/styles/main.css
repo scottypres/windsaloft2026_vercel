@@ -166,16 +166,17 @@ body {
 }
 
 #toggle-settings {
-  background: #fff;
-  color: #111;
-  border-color: #ccc;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
   font-weight: 600;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
 }
 
 #toggle-settings:hover {
-  background: #e0e0e0;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 /* === Top Bar (Location + Controls) === */
