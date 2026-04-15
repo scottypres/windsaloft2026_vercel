@@ -82,16 +82,17 @@ body {
 
 .toggle-settings-btn {
   padding: 0.3rem 0.75rem;
-  background: var(--bg-panel);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: #fff;
+  color: #111;
+  border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .toggle-settings-btn:hover {
-  background: var(--border);
+  background: #e0e0e0;
 }
 
 /* === Top Bar (Location + Controls) === */
