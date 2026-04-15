@@ -5,6 +5,7 @@ const STEPS = [
     title: 'Welcome to Soar Forecaster!',
     text: 'This guide will walk you through the app so you can get the most out of it. Tip: <b><u>use two fingers to scroll tables up and down</u></b>, and one finger to scroll them left and right! You can skip this guide anytime and replay it later from the Guide button.',
     target: null,
+    action: 'closeAll',
   },
   {
     title: 'View Selector',
@@ -14,11 +15,13 @@ const STEPS = [
       'Clouds — cloud cover percentage at different pressure levels, helping you spot clear windows and overcast layers.\n\n' +
       'Ensemble — probabilistic forecasts explained in a later step!',
     target: '#view-dropdown',
+    action: 'openDropdown',
   },
   {
     title: 'Locations',
     text: 'Tap here to open the location panel where you can search for any place, use your GPS, or quickly switch between saved locations. When you select a location, forecasts from all enabled models load automatically.',
     target: '#toggle-locations',
+    action: 'closeDropdown',
   },
   {
     title: 'Location Search',
@@ -60,6 +63,7 @@ const STEPS = [
     text: 'Daylight Only hides nighttime hours to focus on flyable times. Hide >5k ft removes high-altitude rows. Wind Shear outlines cells where wind changes sharply between altitudes. Fog Mode and Best Hours are covered in the next steps.',
     target: '#section-filters',
     requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-filters .section-body',
   },
   {
     title: 'Fog Mode',
@@ -81,24 +85,30 @@ const STEPS = [
     target: '#section-extra-rows',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-extra-rows .section-body',
+    collapseOthers: true,
   },
   {
     title: 'Models & Forecast Days',
     text: 'Enable or disable individual weather models: HRRR (high-res, short-range), ECMWF (global, medium-range), GFS (global, extended), ICON (European global), and NAM (North American mesoscale). Use the slider next to each model to control how many forecast days to load.',
     target: '#section-models',
     requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-models .section-body',
+    collapseOthers: true,
   },
   {
     title: 'Layout',
     text: 'Open the Layout popup to fine-tune every visual aspect: cell width, row height, font sizes, arrow style and size, table spacing, borders, and more. Great for fitting the tables perfectly to your screen size.',
     target: '#open-layout-popup',
     requireVisible: '.bottom-settings-inner',
+    collapseOthers: true,
   },
   {
     title: 'Wind Colors',
     text: 'Customize the three wind speed thresholds that control the color gradient in the tables. Blue means calm winds (at or below the first number), green is moderate, and red means strong. Adjust these to match your personal flying limits.',
     target: '#section-wind-colors',
     requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-wind-colors .section-body',
+    collapseOthers: true,
   },
   {
     title: 'Ensemble View',
@@ -160,10 +170,18 @@ function createOverlay() {
     }
   });
 
-  // Close on backdrop click
   el.querySelector('.guide-backdrop').addEventListener('click', endGuide);
 
   return el;
+}
+
+function collapseAllSections() {
+  document.querySelectorAll('.bottom-settings .section-body').forEach((body) => {
+    body.classList.add('hidden');
+  });
+  document.querySelectorAll('.bottom-settings .section-header').forEach((h) => {
+    h.classList.add('collapsed');
+  });
 }
 
 function ensureVisible(step) {
@@ -174,11 +192,14 @@ function ensureVisible(step) {
       el.dataset.guideOpened = 'true';
     }
   }
+  // Collapse other sections first if requested
+  if (step.collapseOthers) {
+    collapseAllSections();
+  }
   if (step.requireExpanded) {
     const el = document.querySelector(step.requireExpanded);
     if (el && el.classList.contains('hidden')) {
       el.classList.remove('hidden');
-      // Also update the section header toggle state
       const header = el.previousElementSibling;
       if (header && header.classList.contains('collapsed')) {
         header.classList.remove('collapsed');
@@ -188,8 +209,34 @@ function ensureVisible(step) {
 }
 
 function executeAction(step) {
-  if (!step.action || !actionHandler) return;
-  actionHandler(step.action);
+  if (!step.action) return;
+  // Handle local UI actions
+  if (step.action === 'openDropdown') {
+    const menu = document.getElementById('view-dropdown-menu');
+    if (menu) menu.classList.remove('hidden');
+  } else if (step.action === 'closeDropdown') {
+    const menu = document.getElementById('view-dropdown-menu');
+    if (menu) menu.classList.add('hidden');
+  } else if (step.action === 'closeAll') {
+    // Hide locations panel
+    const topBar = document.getElementById('top-bar');
+    const locBtn = document.getElementById('toggle-locations');
+    if (topBar) topBar.classList.add('hidden');
+    if (locBtn) locBtn.textContent = 'Locations';
+    // Hide bottom settings
+    const bottomInner = document.querySelector('.bottom-settings-inner');
+    if (bottomInner) bottomInner.classList.add('hidden');
+    const bottomToggle = document.getElementById('bottom-settings-toggle');
+    if (bottomToggle) bottomToggle.textContent = 'Settings';
+    // Close dropdown
+    const menu = document.getElementById('view-dropdown-menu');
+    if (menu) menu.classList.add('hidden');
+    // Collapse all sections
+    collapseAllSections();
+  } else if (actionHandler) {
+    // Delegate to main.js handler
+    actionHandler(step.action);
+  }
 }
 
 function goToStep(idx) {
@@ -199,7 +246,7 @@ function goToStep(idx) {
   const highlight = overlayEl.querySelector('.guide-highlight');
   const tooltip = overlayEl.querySelector('.guide-tooltip');
 
-  // Execute any action for this step (e.g. switch views)
+  // Execute any action for this step
   executeAction(step);
 
   // Ensure required panels are visible
@@ -252,7 +299,6 @@ function positionTooltip(tooltip, targetRect) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
-  // Try below target
   const belowY = targetRect.bottom + margin;
   if (belowY + 200 < vh) {
     tooltip.style.top = `${belowY}px`;
@@ -260,7 +306,6 @@ function positionTooltip(tooltip, targetRect) {
     return;
   }
 
-  // Try above target
   const aboveY = targetRect.top - margin;
   if (aboveY > 200) {
     tooltip.style.bottom = `${vh - aboveY}px`;
@@ -268,7 +313,6 @@ function positionTooltip(tooltip, targetRect) {
     return;
   }
 
-  // Fallback: center
   centerTooltip(tooltip);
 }
 
@@ -282,13 +326,12 @@ function centerTooltip(tooltip) {
 }
 
 function endGuide() {
-  // Switch back to wind view if we changed it
   if (actionHandler) actionHandler('switchToWind');
   if (overlayEl) {
     overlayEl.remove();
     overlayEl = null;
   }
-  // Close locations panel and bottom settings
+  // Close all panels
   const topBar = document.getElementById('top-bar');
   const locBtn = document.getElementById('toggle-locations');
   if (topBar) topBar.classList.add('hidden');
@@ -297,6 +340,9 @@ function endGuide() {
   if (bottomInner) bottomInner.classList.add('hidden');
   const bottomToggle = document.getElementById('bottom-settings-toggle');
   if (bottomToggle) bottomToggle.textContent = 'Settings';
+  const menu = document.getElementById('view-dropdown-menu');
+  if (menu) menu.classList.add('hidden');
+  collapseAllSections();
 
   localStorage.setItem(GUIDE_SEEN_KEY, 'true');
   if (onComplete) onComplete();
