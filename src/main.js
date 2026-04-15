@@ -481,6 +481,13 @@ function initBottomSettings() {
     window.location.href = 'mai' + 'lto:' + u + '@' + d + '.' + t;
   });
 
+  // Column highlight overlay toggle
+  const colHighlightCheckbox = document.getElementById('col-highlight');
+  const colHighlightOverlay = document.getElementById('col-highlight-overlay');
+  colHighlightCheckbox.addEventListener('change', () => {
+    colHighlightOverlay.classList.toggle('hidden', !colHighlightCheckbox.checked);
+  });
+
   // Wind color thresholds
   initWindColorControls();
 

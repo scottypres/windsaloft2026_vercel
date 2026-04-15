@@ -491,6 +491,21 @@ body {
   width: fit-content;
 }
 
+/* === Column Highlight Overlay === */
+.col-highlight-overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--cell-width);
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  z-index: 10;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 /* === Tables === */
 .tables-wrapper {
   display: flex;
