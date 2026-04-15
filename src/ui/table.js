@@ -62,6 +62,10 @@ export function renderTable(container, data, options = {}) {
   if (hideHighAltitude) {
     altRows = altRows.filter((a) => !a.isHighAltitude);
   }
+  // In temp view, skip altitude rows where all temp values are null
+  if (view === 'temp') {
+    altRows = altRows.filter((a) => a.temp && a.temp.some((t) => t != null));
+  }
 
   const html = [];
   html.push('<table class="forecast-table">');
