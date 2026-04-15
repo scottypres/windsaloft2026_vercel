@@ -68,12 +68,18 @@ export function renderTable(container, data, options = {}) {
   }
 
   const html = [];
+  const headerLabel = data.modelLabel || data.model.toUpperCase();
+
+  // For ensemble models, show label above the table
+  if (isEnsemble) {
+    html.push(`<div class="table-model-label">${headerLabel}</div>`);
+  }
+
   html.push('<table class="forecast-table">');
 
-  // Header — show model label
-  const headerLabel = data.modelLabel || data.model.toUpperCase();
+  // Header
   html.push('<thead><tr>');
-  html.push(`<th class="corner-cell">${headerLabel}</th>`);
+  html.push(`<th class="corner-cell">${isEnsemble ? '' : headerLabel}</th>`);
   let prevDate = '';
   for (const i of hourIndices) {
     const h = data.hours[i];

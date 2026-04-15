@@ -480,6 +480,13 @@ body {
   to { transform: rotate(360deg); }
 }
 
+.table-model-label {
+  font-size: var(--header-font-size);
+  font-weight: 700;
+  color: var(--text);
+  padding: 2px 4px 1px;
+}
+
 /* === Tables === */
 .tables-wrapper {
   display: flex;
