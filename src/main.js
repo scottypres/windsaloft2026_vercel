@@ -695,6 +695,8 @@ function init() {
       savePrefs(prefs);
       rerender();
       restoreControlState(prefs);
+    } else if (action === 'hideLocations') {
+      hideLocationsPanel();
     }
   }
 

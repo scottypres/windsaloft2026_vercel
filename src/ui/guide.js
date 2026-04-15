@@ -48,6 +48,7 @@ const STEPS = [
     title: 'The Forecast Tables',
     text: 'Each table shows one weather model. Rows are altitudes (surface at the bottom, higher altitudes above). Columns are hours. Swipe left/right to scroll through time — all model tables scroll together so you can compare the same hour across models. <b><u>Use two fingers to scroll the page up and down between tables.</u></b>',
     target: '.tables-wrapper',
+    action: 'hideLocations',
   },
   {
     title: 'Settings',
