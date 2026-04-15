@@ -543,7 +543,7 @@ function initSettingsToggle() {
 
   const updateVisibility = () => {
     topBar.classList.toggle('hidden', !prefs.settingsVisible);
-    btn.textContent = prefs.settingsVisible ? 'Hide' : 'Locations';
+    btn.textContent = prefs.settingsVisible ? 'Hide' : 'Settings';
   };
 
   btn.addEventListener('click', () => {
