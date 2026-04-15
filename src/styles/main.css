@@ -591,6 +591,19 @@ body {
   border-top: 1px solid var(--border);
 }
 
+/* Promoted supp rows (e.g. Gusts) — same size as altitude rows */
+.supp-row-promoted .supp-cell {
+  font-size: var(--cell-font-size);
+  font-weight: 600;
+}
+
+.supp-row-promoted .supp-label {
+  font-size: var(--cell-font-size);
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text);
+}
+
 /* === No Data / Error === */
 .no-data, .error {
   padding: 2rem;
