@@ -1,5 +1,5 @@
 // Amplified drag scrolling - drags scroll faster than 1:1
-const DRAG_MULTIPLIER = 1.5;
+const DRAG_MULTIPLIER = 2;
 
 export function enableMomentumScroll(container) {
   let isDragging = false;
