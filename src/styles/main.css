@@ -493,10 +493,8 @@ body {
 }
 
 .supp-label {
-  font-style: italic;
-  font-weight: 500;
+  font-weight: 600;
   font-size: var(--supp-font-size);
-  color: var(--text-muted);
   border-top: 1px solid var(--border);
 }
 
@@ -602,6 +600,11 @@ body {
   font-style: normal;
   font-weight: 600;
   color: var(--text);
+}
+
+/* Layout preview: reduce cell opacity so layout changes are easier to see */
+.layout-preview .cell {
+  opacity: 0.3;
 }
 
 /* === No Data / Error === */
