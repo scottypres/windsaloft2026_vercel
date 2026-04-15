@@ -1,4 +1,5 @@
-// Amplified drag scrolling - drags scroll faster than 1:1
+// Mouse drag scrolling with multiplier (desktop only).
+// Touch scrolling is handled natively by the browser for maximum smoothness.
 const DRAG_MULTIPLIER = 1.5;
 
 export function enableMomentumScroll(container) {
@@ -31,38 +32,28 @@ export function enableMomentumScroll(container) {
     container.style.userSelect = '';
   });
 
-  // Touch drag — CSS touch-action: pan-y handles vertical natively,
-  // we only handle horizontal. All listeners passive for compositor perf.
-  let touchStartX, touchScrollLeft;
-  let rafId = null;
-  let targetScrollLeft = null;
+  // Multi-touch lock: prevent horizontal drift during two-finger vertical scrolls
+  let multiTouchLock = null;
 
   container.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) return;
-    touchStartX = e.touches[0].clientX;
-    touchScrollLeft = container.scrollLeft;
-    targetScrollLeft = null;
+    if (e.touches.length >= 2) {
+      multiTouchLock = container.scrollLeft;
+    }
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
-    if (e.touches.length !== 1) return;
-    const dx = e.touches[0].clientX - touchStartX;
-    targetScrollLeft = touchScrollLeft - dx * DRAG_MULTIPLIER;
-    if (!rafId) {
-      rafId = requestAnimationFrame(() => {
-        if (targetScrollLeft !== null) {
-          container.scrollLeft = targetScrollLeft;
-        }
-        rafId = null;
-      });
+    if (e.touches.length >= 2 && multiTouchLock !== null) {
+      container.scrollLeft = multiTouchLock;
     }
   }, { passive: true });
 
-  container.addEventListener('touchend', () => {
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-      rafId = null;
+  container.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0 && multiTouchLock !== null) {
+      container.scrollLeft = multiTouchLock;
+      requestAnimationFrame(() => {
+        container.scrollLeft = multiTouchLock;
+        multiTouchLock = null;
+      });
     }
-    targetScrollLeft = null;
   }, { passive: true });
 }
