@@ -58,28 +58,35 @@ function setupScrollSync() {
 
   if (!syncEnabled) return;
 
-  // Collect all visible, non-empty containers
-  const containers = [];
+  // Group visible, non-empty containers by their sync group
+  const groups = {};
   const sections = document.querySelectorAll('.table-section:not(.hidden)');
   sections.forEach((section) => {
+    const group = section.dataset.syncGroup;
+    if (!group) return; // No sync group = scrolls independently
     const container = section.querySelector('.table-container');
     if (container && container.innerHTML.trim()) {
-      containers.push(container);
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(container);
     }
   });
 
-  containers.forEach((container) => {
-    container._scrollHandler = () => {
-      if (syncing) return;
-      syncing = true;
-      const left = container.scrollLeft;
-      containers.forEach((other) => {
-        if (other !== container) other.scrollLeft = left;
-      });
-      syncing = false;
-    };
-    container.addEventListener('scroll', container._scrollHandler);
-  });
+  // Set up per-group sync
+  for (const containers of Object.values(groups)) {
+    if (containers.length < 2) continue;
+    containers.forEach((container) => {
+      container._scrollHandler = () => {
+        if (syncing) return;
+        syncing = true;
+        const left = container.scrollLeft;
+        containers.forEach((other) => {
+          if (other !== container) other.scrollLeft = left;
+        });
+        syncing = false;
+      };
+      container.addEventListener('scroll', container._scrollHandler);
+    });
+  }
 }
 
 function updateTableSectionVisibility() {

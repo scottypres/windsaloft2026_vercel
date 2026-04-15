@@ -156,10 +156,8 @@ export const MODEL_CONFIGS = {
     modelsParam: null,  // Dedicated endpoint, no models= param
     maxDays: 7,
     defaultDays: 5,
-    pressureLevels: [400, 500, 600, 700, 800, 850, 900, 925, 950, 975, 1000],
-    cloudPressureLevels: [
-      100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 850, 900, 925, 950, 975, 1000,
-    ],
+    pressureLevels: [700, 800, 850, 900, 925, 950, 975, 1000],
+    cloudPressureLevels: [700, 800, 850, 900, 925, 950, 975, 1000],
     surfaceLevels: [10, 80, 180],
     // ICON dedicated endpoint uses NO underscore: windspeed_850hPa
     windParamPrefix: 'windspeed_',
@@ -195,7 +193,7 @@ export const ENSEMBLE_CONFIGS = {
     modelsParam: 'ncep_gefs_seamless',
     fieldSuffix: '_ncep_gefs_seamless',
     memberCount: 30,
-    pressureLevels: [400, 500, 600, 700, 850, 925, 1000],
+    pressureLevels: [700, 850, 925, 1000],
     cloudPressureLevels: [],  // GEFS cloud at hPa = all null
     surfaceLevels: [10, 80, 100, 120],
     capabilities: {
@@ -211,8 +209,8 @@ export const ENSEMBLE_CONFIGS = {
     modelsParam: 'ecmwf_ifs025_ensemble',
     fieldSuffix: '_ecmwf_ifs025_ensemble',
     memberCount: 50,
-    pressureLevels: [400, 500, 600, 700, 850, 925, 1000],
-    cloudPressureLevels: [400, 500, 600, 700, 850, 925, 1000],
+    pressureLevels: [700, 850, 925, 1000],
+    cloudPressureLevels: [700, 850, 925, 1000],
     surfaceLevels: [10, 100],
     capabilities: {
       cape: true,
