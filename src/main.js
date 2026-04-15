@@ -458,6 +458,18 @@ function initBottomSettings() {
     }
   });
 
+  // Model Info popup
+  const modelInfoPopup = document.getElementById('model-info-popup');
+  document.getElementById('model-info-btn').addEventListener('click', () => {
+    modelInfoPopup.classList.remove('hidden');
+  });
+  document.getElementById('model-info-popup-done').addEventListener('click', () => {
+    modelInfoPopup.classList.add('hidden');
+  });
+  document.querySelector('.model-info-popup-backdrop').addEventListener('click', () => {
+    modelInfoPopup.classList.add('hidden');
+  });
+
   // Wind color thresholds
   initWindColorControls();
 

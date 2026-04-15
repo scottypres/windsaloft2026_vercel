@@ -107,6 +107,7 @@
       <div class="settings-section" id="section-models">
         <button class="section-header" data-section="models">Models &amp; Forecast</button>
         <div class="section-body">
+          <button id="model-info-btn" class="small-btn" style="width:100%;margin-bottom:0.4rem">Model Info</button>
           <label class="toggle-label model-toggle">
             <input type="checkbox" data-model-toggle="hrrr" checked> HRRR
             <input type="range" data-model-days="hrrr" min="1" max="3" value="3" class="range-input">
@@ -163,6 +164,72 @@
       </div>
     </div>
     <button id="bottom-settings-toggle" class="bottom-settings-toggle-btn">Settings</button>
+  </div>
+
+  <!-- Model Info Popup -->
+  <div id="model-info-popup" class="model-info-popup hidden">
+    <div class="model-info-popup-backdrop"></div>
+    <div class="model-info-popup-panel">
+      <div class="layout-popup-header">
+        <span>Weather Model Info</span>
+        <button id="model-info-popup-done" class="layout-popup-done-btn">Done</button>
+      </div>
+      <div class="model-info-popup-body">
+        <div class="model-info-card">
+          <h3>HRRR <span class="model-tag">High-Resolution Rapid Refresh</span></h3>
+          <div class="model-meta">Resolution: 3 km &bull; Range: 0–48 hrs &bull; Updates: Hourly &bull; Coverage: Continental US</div>
+          <p>The highest resolution model available, HRRR excels at capturing local terrain effects, convective initiation, and fine-scale wind patterns. Updated every hour, it provides the freshest short-range forecast.</p>
+          <div class="model-accuracy">
+            <strong>Accuracy vs. Time:</strong> Excellent 0–12 hrs, good 12–24 hrs, degrades significantly after 24 hrs. Best model for same-day planning. Trust it most for the next 6–12 hours.
+          </div>
+        </div>
+        <div class="model-info-card">
+          <h3>ECMWF <span class="model-tag">European Centre for Medium-Range Forecasts</span></h3>
+          <div class="model-meta">Resolution: ~9 km &bull; Range: 0–15 days &bull; Updates: 2x daily (00Z, 12Z) &bull; Coverage: Global</div>
+          <p>Widely considered the gold standard for medium-range weather forecasting. The ECMWF IFS model consistently outperforms other global models in verification scores, especially beyond day 3.</p>
+          <div class="model-accuracy">
+            <strong>Accuracy vs. Time:</strong> Very good 0–5 days, good 5–10 days, diminishing skill 10–15 days. Generally the most reliable model for planning several days ahead.
+          </div>
+        </div>
+        <div class="model-info-card">
+          <h3>GFS <span class="model-tag">Global Forecast System (Seamless)</span></h3>
+          <div class="model-meta">Resolution: ~13 km &bull; Range: 0–14 days &bull; Updates: 4x daily (00/06/12/18Z) &bull; Coverage: Global</div>
+          <p>NOAA's primary global model. GFS Seamless blends higher-resolution models for the short range to improve near-term accuracy. Updates more frequently than ECMWF, providing fresher data 4 times per day.</p>
+          <div class="model-accuracy">
+            <strong>Accuracy vs. Time:</strong> Good 0–5 days, moderate 5–10 days, low skill beyond 10 days. Generally slightly behind ECMWF but still very useful. More frequent updates can catch changes faster.
+          </div>
+        </div>
+        <div class="model-info-card">
+          <h3>ICON <span class="model-tag">ICOsahedral Non-hydrostatic Model</span></h3>
+          <div class="model-meta">Resolution: ~13 km global / ~7 km EU &bull; Range: 0–7 days &bull; Updates: 4x daily &bull; Coverage: Global</div>
+          <p>Germany's DWD weather service model. ICON uses an innovative icosahedral grid that avoids pole singularities. Provides an independent perspective that's valuable when models disagree — if ICON agrees with ECMWF, confidence increases.</p>
+          <div class="model-accuracy">
+            <strong>Accuracy vs. Time:</strong> Good 0–3 days, moderate 3–5 days, drops off beyond 5 days. Comparable to GFS overall, sometimes better for European locations.
+          </div>
+        </div>
+        <div class="model-info-card">
+          <h3>NAM <span class="model-tag">North American Mesoscale</span></h3>
+          <div class="model-meta">Resolution: ~12 km &bull; Range: 0–84 hrs &bull; Updates: 4x daily &bull; Coverage: North America</div>
+          <p>NOAA's regional mesoscale model for North America. Provides a useful second opinion alongside HRRR for short-range forecasts. Better at resolving frontal boundaries and precipitation patterns than global models.</p>
+          <div class="model-accuracy">
+            <strong>Accuracy vs. Time:</strong> Good 0–2 days, moderate 2–3 days, low skill beyond 3 days. Most useful as a comparison to HRRR in the first 48 hours.
+          </div>
+        </div>
+        <div class="model-info-card">
+          <h3>GEFS Ensemble <span class="model-tag">30 Members</span></h3>
+          <div class="model-meta">Members: 30 &bull; Range: 0–14 days &bull; Base: GFS</div>
+          <p>Runs the GFS model 30 times with slightly different initial conditions. The average gives a more stable forecast than any single run. The spread between members indicates confidence — when members agree (green), the forecast is more trustworthy; when they disagree (yellow/red), conditions are uncertain.</p>
+        </div>
+        <div class="model-info-card">
+          <h3>ECMWF Ensemble <span class="model-tag">50 Members</span></h3>
+          <div class="model-meta">Members: 50 &bull; Range: 0–14 days &bull; Base: ECMWF IFS</div>
+          <p>The ECMWF ensemble uses 50 perturbed members — the largest major ensemble system. Combined with the superior ECMWF base model, it provides the most reliable probabilistic forecast available. Color coding works the same as GEFS: green = high agreement, red = low agreement.</p>
+        </div>
+        <div class="model-info-tip">
+          <strong>Tip:</strong> When models disagree on timing or intensity, give more weight to HRRR for 0–24 hrs and ECMWF beyond 3 days. Compare at least 2–3 models before making flying decisions. Use the Ensemble view to gauge overall forecast confidence.
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Layout Popup -->

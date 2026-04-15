@@ -963,7 +963,7 @@ body {
 .guide-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.28);
   pointer-events: auto;
 }
 
@@ -971,7 +971,7 @@ body {
   position: fixed;
   border: 3px solid #e53935;
   border-radius: 6px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
   background: transparent;
   z-index: 10001;
   pointer-events: none;
@@ -1062,5 +1062,97 @@ body {
   padding: 2px 8px;
   font-size: 0.8rem;
   font-weight: 600;
+  color: var(--text);
+}
+
+/* === Model Info Popup === */
+.model-info-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-info-popup.hidden {
+  display: none;
+}
+
+.model-info-popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.model-info-popup-panel {
+  position: relative;
+  background: rgba(30, 32, 42, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  min-width: 280px;
+  max-width: 92vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 1;
+}
+
+.model-info-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.model-info-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+
+.model-info-card h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.model-tag {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.model-meta {
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
+.model-info-card p {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.model-accuracy {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #ccc;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.model-info-tip {
+  background: rgba(74, 144, 217, 0.15);
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
   color: var(--text);
 }
