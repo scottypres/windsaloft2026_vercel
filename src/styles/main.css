@@ -675,6 +675,10 @@ body {
   color: var(--text);
 }
 
+.supp-row-promoted td {
+  border-bottom: 1px solid #000;
+}
+
 /* === No Data / Error === */
 .no-data, .error {
   padding: 2rem;
