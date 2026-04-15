@@ -149,13 +149,30 @@ export function blendTowardGray(color, factor) {
   return `rgb(${nr},${ng},${nb})`;
 }
 
-// Compute confidence factor from ensemble spread.
-// spread < 2 mph = full confidence (1.0), spread > 10 mph = low confidence (0.15).
-export function spreadConfidence(spread) {
-  if (spread == null) return 1;
-  if (spread <= 2) return 1;
-  if (spread >= 10) return 0.15;
-  return 1 - ((spread - 2) / 8) * 0.85;
+// Ensemble spread color: green (low spread/high confidence) → yellow → red (high spread/low confidence)
+// spread < 1 = deep green, spread 1-3 = green, 3-5 = yellow, 5-8 = orange, >8 = red
+export function spreadColor(spread) {
+  if (spread == null) return '#555';
+
+  const green = [40, 180, 80];
+  const yellow = [220, 200, 40];
+  const orange = [230, 130, 40];
+  const red = [210, 50, 50];
+
+  if (spread <= 1) return rgb([30, 160, 60]);
+  if (spread <= 3) {
+    const t = (spread - 1) / 2;
+    return rgb(lerp(green, yellow, t));
+  }
+  if (spread <= 6) {
+    const t = (spread - 3) / 3;
+    return rgb(lerp(yellow, orange, t));
+  }
+  if (spread <= 10) {
+    const t = (spread - 6) / 4;
+    return rgb(lerp(orange, red, t));
+  }
+  return rgb(red);
 }
 
 // Get contrasting text color for a background

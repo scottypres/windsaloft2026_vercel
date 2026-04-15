@@ -117,6 +117,20 @@ function buildSurface(hourly) {
   };
 }
 
+// Find the last hour index with valid surface wind data.
+// Returns trimmed length (lastValidIndex + 1).
+function findLastValidWindHour(altitudes, totalHours) {
+  // Use the lowest surface altitude (10m) to detect null trailing hours
+  const surfaceAlt = altitudes.find((a) => a.key === '10m') || altitudes[altitudes.length - 1];
+  if (!surfaceAlt) return totalHours;
+
+  let last = totalHours - 1;
+  while (last >= 0 && surfaceAlt.wind[last]?.speed == null) {
+    last--;
+  }
+  return last + 1;
+}
+
 export function transformWeatherData(raw, modelId) {
   const config = MODEL_CONFIGS[modelId];
   if (!config) throw new Error(`Unknown model config: ${modelId}`);
@@ -144,6 +158,25 @@ export function transformWeatherData(raw, modelId) {
   });
 
   const surface = buildSurface(hourly);
+
+  // Trim trailing hours where surface wind data is null (HRRR/NAM stop early)
+  const trimLen = findLastValidWindHour(altitudes, hours.length);
+  if (trimLen < hours.length) {
+    hours.length = trimLen;
+    for (const alt of altitudes) {
+      alt.wind.length = trimLen;
+      alt.temp.length = trimLen;
+      alt.cloud.length = trimLen;
+    }
+    for (const ca of cloudAltitudes) {
+      ca.cloud.length = trimLen;
+    }
+    for (const key of Object.keys(surface)) {
+      if (Array.isArray(surface[key])) {
+        surface[key].length = trimLen;
+      }
+    }
+  }
 
   const dailyData = daily
     ? {

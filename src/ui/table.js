@@ -11,8 +11,7 @@ import {
   humidityColor,
   visibilityColor,
   textColorFor,
-  blendTowardGray,
-  spreadConfidence,
+  spreadColor,
 } from '../data/colors.js';
 import { LOWEST_3_KEYS } from '../data/altitudes.js';
 
@@ -109,17 +108,17 @@ export function renderTable(container, data, options = {}) {
         const w = alt.wind[i];
         const speed = w?.speed;
         const dir = w?.direction;
-        let bg = windColor(speed, windThresholds);
-        // Ensemble spread overlay: desaturate when spread is high
-        if (isEnsemble && w?.spread != null) {
-          const conf = spreadConfidence(w.spread);
-          bg = blendTowardGray(bg, conf);
+        let bg;
+        if (isEnsemble) {
+          // Ensemble: color based on spread (confidence), not wind speed
+          bg = spreadColor(w?.spread);
+        } else {
+          bg = windColor(speed, windThresholds);
         }
         const color = textColorFor(bg);
         const val = speed != null ? speed : '?';
         const arrow = windArrow(dir);
-        // Show spread as title tooltip for ensemble cells
-        const title = isEnsemble && w?.spread != null ? ` title="spread: \u00b1${w.spread} mph"` : '';
+        const title = isEnsemble && w?.spread != null ? ` title="\u00b1${w.spread} mph spread"` : '';
         html.push(
           `<td class="cell ${dayClass}${boundary}" style="background:${bg};color:${color}" data-alt="${alt.key}" data-hour="${i}"${title}>` +
             `<div class="cell-value">${val}</div>${arrow ? `<div class="cell-arrow">${arrow}</div>` : ''}</td>`
