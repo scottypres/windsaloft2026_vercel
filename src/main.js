@@ -499,6 +499,7 @@ function applyCellBorders(enabled) {
 function initSettingsToggle() {
   const btn = document.getElementById('toggle-settings');
   const topBar = document.getElementById('top-bar');
+  const bottomInner = document.querySelector('.bottom-settings-inner');
 
   const updateVisibility = () => {
     topBar.classList.toggle('hidden', !prefs.settingsVisible);
@@ -509,6 +510,10 @@ function initSettingsToggle() {
     prefs.settingsVisible = !prefs.settingsVisible;
     savePrefs(prefs);
     updateVisibility();
+    // Hide bottom settings when locations panel opens
+    if (prefs.settingsVisible && bottomInner) {
+      bottomInner.classList.add('hidden');
+    }
   });
 
   updateVisibility();

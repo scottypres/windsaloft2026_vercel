@@ -569,7 +569,7 @@ body {
 }
 
 .day-boundary {
-  border-left: var(--day-border-width) solid var(--accent) !important;
+  border-left: var(--day-border-width) solid #000 !important;
 }
 
 /* Wind shear highlight */
