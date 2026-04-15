@@ -3,20 +3,29 @@ const DRAG_MULTIPLIER = 2.5;
 // Minimum pixel movement before locking to an axis
 const AXIS_LOCK_THRESHOLD = 6;
 
+function snapToColumn(container) {
+  if (!document.body.classList.contains('col-guide')) return;
+  const cell = container.querySelector('.cell');
+  if (!cell) return;
+  const cellWidth = cell.offsetWidth;
+  if (cellWidth <= 0) return;
+
+  const snapped = Math.round(container.scrollLeft / cellWidth) * cellWidth;
+  container.scrollTo({ left: snapped, behavior: 'smooth' });
+}
+
 export function enableMomentumScroll(container) {
   let isDragging = false;
-  let startX, startY, scrollLeftStart, scrollTopStart;
+  let startX, scrollLeftStart;
 
-  // Mouse drag
+  // Mouse drag — horizontal only
   container.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('input, button, select, a')) return;
 
     isDragging = true;
     startX = e.clientX;
-    startY = e.clientY;
     scrollLeftStart = container.scrollLeft;
-    scrollTopStart = container.scrollTop;
     container.style.cursor = 'grabbing';
     container.style.userSelect = 'none';
     e.preventDefault();
@@ -33,29 +42,31 @@ export function enableMomentumScroll(container) {
     isDragging = false;
     container.style.cursor = '';
     container.style.userSelect = '';
+    snapToColumn(container);
   });
 
-  // Touch drag — single finger scrolls horizontally only
-  let touchStartX, touchScrollLeft;
+  // Touch drag — axis-locked
+  let touchStartX, touchStartY, touchScrollLeft;
   let touchAxis = null; // 'x' | 'y' | null
 
   container.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
     touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
     touchScrollLeft = container.scrollLeft;
     touchAxis = null;
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
     if (e.touches.length !== 1) return;
+
     const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - (container._touchStartY || e.touches[0].clientY);
+    const dy = e.touches[0].clientY - touchStartY;
 
     // Lock axis on first significant movement
     if (!touchAxis) {
-      if (!container._touchStartY) container._touchStartY = e.touches[0].clientY;
       const absDx = Math.abs(dx);
-      const absDy = Math.abs(e.touches[0].clientY - container._touchStartY);
+      const absDy = Math.abs(dy);
       if (absDx > AXIS_LOCK_THRESHOLD || absDy > AXIS_LOCK_THRESHOLD) {
         touchAxis = absDx > absDy ? 'x' : 'y';
       }
@@ -70,7 +81,9 @@ export function enableMomentumScroll(container) {
   }, { passive: false });
 
   container.addEventListener('touchend', () => {
+    if (touchAxis === 'x') {
+      snapToColumn(container);
+    }
     touchAxis = null;
-    delete container._touchStartY;
   }, { passive: true });
 }
