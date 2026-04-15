@@ -1,5 +1,5 @@
 // Amplified drag scrolling - drags scroll faster than 1:1
-const DRAG_MULTIPLIER = 2.0;
+const DRAG_MULTIPLIER = 1.5;
 // Minimum pixel movement before locking to an axis
 const AXIS_LOCK_THRESHOLD = 6;
 
@@ -33,19 +33,34 @@ export function enableMomentumScroll(container) {
     container.style.userSelect = '';
   });
 
-  // Touch drag — axis-locked
+  // Touch drag — axis-locked for single finger, scroll-locked for multi-touch
   let touchStartX, touchStartY, touchScrollLeft;
   let touchAxis = null; // 'x' | 'y' | null
+  let multiTouchLock = null; // saved scrollLeft during two-finger gestures
 
   container.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) return;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchScrollLeft = container.scrollLeft;
-    touchAxis = null;
+    if (e.touches.length >= 2) {
+      // Two fingers: lock horizontal position to prevent drift
+      multiTouchLock = container.scrollLeft;
+      touchAxis = null;
+      return;
+    }
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchScrollLeft = container.scrollLeft;
+      touchAxis = null;
+      multiTouchLock = null;
+    }
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
+    // Two fingers: keep restoring locked horizontal position
+    if (e.touches.length >= 2 && multiTouchLock !== null) {
+      container.scrollLeft = multiTouchLock;
+      return;
+    }
+
     if (e.touches.length !== 1) return;
 
     const dx = e.touches[0].clientX - touchStartX;
@@ -68,7 +83,17 @@ export function enableMomentumScroll(container) {
     }
   }, { passive: false });
 
-  container.addEventListener('touchend', () => {
+  container.addEventListener('touchend', (e) => {
+    // When all fingers lift after a multi-touch gesture, restore position
+    if (e.touches.length === 0 && multiTouchLock !== null) {
+      container.scrollLeft = multiTouchLock;
+      // Also restore after any browser scroll animation settles
+      requestAnimationFrame(() => {
+        container.scrollLeft = multiTouchLock;
+        multiTouchLock = null;
+      });
+      return;
+    }
     touchAxis = null;
   }, { passive: true });
 }
