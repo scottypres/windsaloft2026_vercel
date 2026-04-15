@@ -39,11 +39,18 @@ export function enableMomentumScroll(container) {
   let touchStartX, touchStartY, touchScrollLeft, touchScrollTop;
 
   container.addEventListener('touchstart', (e) => {
+    if (e.touches.length >= 2) {
+      multiTouchActive = true;
+      lockedScrollLeft = container.scrollLeft;
+      return;
+    }
     if (e.touches.length !== 1) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     touchScrollLeft = container.scrollLeft;
     touchScrollTop = container.scrollTop;
+    multiTouchActive = false;
+    lockedScrollLeft = null;
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
@@ -54,4 +61,25 @@ export function enableMomentumScroll(container) {
     container.scrollTop = touchScrollTop - dy;
     e.preventDefault();
   }, { passive: false });
+
+  // Multi-touch lock: prevent horizontal drift during two-finger vertical scrolls
+  let multiTouchActive = false;
+  let lockedScrollLeft = null;
+
+  container.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0 && multiTouchActive) {
+      const saved = lockedScrollLeft;
+      setTimeout(() => {
+        if (saved !== null) container.scrollLeft = saved;
+        multiTouchActive = false;
+        lockedScrollLeft = null;
+      }, 150);
+    }
+  }, { passive: true });
+
+  container.addEventListener('scroll', () => {
+    if (multiTouchActive && lockedScrollLeft !== null && container.scrollLeft !== lockedScrollLeft) {
+      container.scrollLeft = lockedScrollLeft;
+    }
+  });
 }
