@@ -60,8 +60,15 @@ const STEPS = [
   },
   {
     title: 'Filters',
-    text: 'Daylight Only hides nighttime hours to focus on flyable times. Hide >5k ft removes high-altitude rows. Wind Shear outlines cells where wind changes sharply between altitudes. Fog Mode and Best Hours are covered in the next steps.',
+    text: 'Daylight Only hides nighttime hours to focus on flyable times. Hide >5k ft removes high-altitude rows. Wind Shear, Fog Mode, and Best Hours are explained in the next steps.',
     target: '#section-filters',
+    requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-filters .section-body',
+  },
+  {
+    title: 'Wind Shear',
+    text: 'Wind Shear highlights cells where wind changes significantly between adjacent altitude levels. It compares each pair of neighboring rows and outlines them with an orange border when: the speed difference exceeds 10 mph, OR the speed difference exceeds 5 mph and the direction changes by more than 90°. This helps you identify dangerous turbulence layers where wind conditions shift abruptly — critical for safe flying decisions.',
+    target: '#wind-shear-label',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-filters .section-body',
   },
@@ -131,6 +138,7 @@ const STEPS = [
     title: "You're all set!",
     text: 'Start by searching for a location or tapping GPS. Scroll through the tables to explore the forecast. Remember: <b><u>two fingers to scroll up/down between models</u></b>, one finger to scroll left/right through hours. Enjoy!',
     target: null,
+    action: 'closeAll',
   },
 ];
 
