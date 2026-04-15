@@ -82,16 +82,26 @@ body {
 
 .toggle-settings-btn {
   padding: 0.3rem 0.75rem;
-  background: #fff;
-  color: #111;
-  border: 1px solid #ccc;
+  background: var(--bg-panel);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8rem;
-  font-weight: 600;
 }
 
 .toggle-settings-btn:hover {
+  background: var(--border);
+}
+
+#toggle-settings {
+  background: #fff;
+  color: #111;
+  border-color: #ccc;
+  font-weight: 600;
+}
+
+#toggle-settings:hover {
   background: #e0e0e0;
 }
 

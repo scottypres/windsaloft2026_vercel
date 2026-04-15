@@ -19,6 +19,7 @@ export function initLocationUI(container, callbacks) {
           <button id="save-location-btn" class="small-btn" disabled>Save Current</button>
         </div>
         <ul id="saved-list" class="saved-list"></ul>
+        <button id="show-all-locations" class="action-btn" style="margin-top:0.5rem;width:100%">Show All Locations</button>
       </div>
     </div>
   `;
