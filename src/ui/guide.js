@@ -70,7 +70,7 @@ const STEPS = [
   },
   {
     title: 'Best Hours',
-    text: 'Best Hours filters the forecast to only show hours where the surface wind speed is at or below your chosen threshold (default 15 mph). This makes it easy to find the calmest windows for flying. Adjust the threshold number to match your comfort level — lower values show only the lightest wind hours.',
+    text: 'Best Hours filters the forecast to only show hours where wind speeds up to 400ft are at or below your chosen threshold (default 15 mph). This makes it easy to find the calmest windows for flying. Adjust the threshold number to match your comfort level — lower values show only the lightest wind hours.',
     target: '#best-hours-label',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-filters .section-body',
@@ -80,6 +80,7 @@ const STEPS = [
     text: 'Add supplementary data beneath each model table: Gusts, CAPE (convective energy), Lifted Index (stability), Precipitation %, Precipitation inches, Temperature, Humidity, Dew Point Spread, Visibility, and Cloud cover at low/mid/high levels. Toggle each one individually.',
     target: '#section-extra-rows',
     requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-extra-rows .section-body',
   },
   {
     title: 'Models & Forecast Days',

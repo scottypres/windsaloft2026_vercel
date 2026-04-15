@@ -96,7 +96,7 @@ export function buildCloudAltitudeRows(config) {
   return rows;
 }
 
-// The 3 lowest altitude rows for "Best Hours" filter
-export const LOWEST_3_KEYS = ['10m', '80m', '1000hPa'];
+// Maximum altitude (in feet) to check for "Best Hours" filter
+export const BEST_HOURS_MAX_FEET = 400;
 
 export { PRESSURE_TO_FEET, SURFACE_TO_FEET };

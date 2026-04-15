@@ -13,7 +13,7 @@ import {
   textColorFor,
   spreadColor,
 } from '../data/colors.js';
-import { LOWEST_3_KEYS } from '../data/altitudes.js';
+import { BEST_HOURS_MAX_FEET } from '../data/altitudes.js';
 
 // Render a full forecast table into a container element
 export function renderTable(container, data, options = {}) {
@@ -37,10 +37,9 @@ export function renderTable(container, data, options = {}) {
   }
 
   if (bestHoursThreshold != null) {
+    const lowAlts = data.altitudes.filter((a) => a.feet <= BEST_HOURS_MAX_FEET);
     hourIndices = hourIndices.filter((i) => {
-      return LOWEST_3_KEYS.every((key) => {
-        const alt = data.altitudes.find((a) => a.key === key);
-        if (!alt) return true;
+      return lowAlts.every((alt) => {
         const speed = alt.wind[i]?.speed;
         return speed == null || speed <= bestHoursThreshold;
       });
