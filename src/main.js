@@ -668,6 +668,7 @@ function init() {
     onShowAllLocations() {
       prefs.showAllLocations = !prefs.showAllLocations;
       savePrefs(prefs);
+      hideLocationsPanel();
       if (prefs.showAllLocations) {
         renderAllLocations();
       } else {
