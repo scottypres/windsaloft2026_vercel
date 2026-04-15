@@ -1,7 +1,5 @@
 // Amplified drag scrolling - drags scroll faster than 1:1
 const DRAG_MULTIPLIER = 1.5;
-// Minimum pixel movement before locking to an axis
-const AXIS_LOCK_THRESHOLD = 6;
 
 export function enableMomentumScroll(container) {
   let isDragging = false;
@@ -33,67 +31,38 @@ export function enableMomentumScroll(container) {
     container.style.userSelect = '';
   });
 
-  // Touch drag — axis-locked for single finger, scroll-locked for multi-touch
-  let touchStartX, touchStartY, touchScrollLeft;
-  let touchAxis = null; // 'x' | 'y' | null
-  let multiTouchLock = null; // saved scrollLeft during two-finger gestures
+  // Touch drag — CSS touch-action: pan-y handles vertical natively,
+  // we only handle horizontal. All listeners passive for compositor perf.
+  let touchStartX, touchScrollLeft;
+  let rafId = null;
+  let targetScrollLeft = null;
 
   container.addEventListener('touchstart', (e) => {
-    if (e.touches.length >= 2) {
-      // Two fingers: lock horizontal position to prevent drift
-      multiTouchLock = container.scrollLeft;
-      touchAxis = null;
-      return;
-    }
-    if (e.touches.length === 1) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      touchScrollLeft = container.scrollLeft;
-      touchAxis = null;
-      multiTouchLock = null;
-    }
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchScrollLeft = container.scrollLeft;
+    targetScrollLeft = null;
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
-    // Two fingers: keep restoring locked horizontal position
-    if (e.touches.length >= 2 && multiTouchLock !== null) {
-      container.scrollLeft = multiTouchLock;
-      return;
-    }
-
     if (e.touches.length !== 1) return;
-
     const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - touchStartY;
-
-    // Lock axis on first significant movement
-    if (!touchAxis) {
-      const absDx = Math.abs(dx);
-      const absDy = Math.abs(dy);
-      if (absDx > AXIS_LOCK_THRESHOLD || absDy > AXIS_LOCK_THRESHOLD) {
-        touchAxis = absDx > absDy ? 'x' : 'y';
-      }
-      if (!touchAxis) return;
-    }
-
-    // Only handle horizontal scrolling; let vertical pass through to parent
-    if (touchAxis === 'x') {
-      container.scrollLeft = touchScrollLeft - dx * DRAG_MULTIPLIER;
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  container.addEventListener('touchend', (e) => {
-    // When all fingers lift after a multi-touch gesture, restore position
-    if (e.touches.length === 0 && multiTouchLock !== null) {
-      container.scrollLeft = multiTouchLock;
-      // Also restore after any browser scroll animation settles
-      requestAnimationFrame(() => {
-        container.scrollLeft = multiTouchLock;
-        multiTouchLock = null;
+    targetScrollLeft = touchScrollLeft - dx * DRAG_MULTIPLIER;
+    if (!rafId) {
+      rafId = requestAnimationFrame(() => {
+        if (targetScrollLeft !== null) {
+          container.scrollLeft = targetScrollLeft;
+        }
+        rafId = null;
       });
-      return;
     }
-    touchAxis = null;
+  }, { passive: true });
+
+  container.addEventListener('touchend', () => {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    targetScrollLeft = null;
   }, { passive: true });
 }

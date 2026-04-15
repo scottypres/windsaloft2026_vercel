@@ -519,6 +519,7 @@ body {
   background: var(--bg-surface);
   cursor: grab;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .forecast-table {
