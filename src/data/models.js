@@ -55,7 +55,7 @@ export const MODEL_CONFIGS = {
     baseUrl: FORECAST_URL,
     modelsParam: 'ecmwf_ifs',
     maxDays: 15,
-    defaultDays: 10,
+    defaultDays: 7,
     pressureLevels: [],  // No pressure level data
     cloudPressureLevels: [],
     surfaceLevels: [10, 100, 200],
@@ -88,7 +88,7 @@ export const MODEL_CONFIGS = {
     baseUrl: FORECAST_URL,
     modelsParam: 'ncep_nam_conus',
     maxDays: 4,
-    defaultDays: 4,
+    defaultDays: 3,
     pressureLevels: [],  // No pressure level data
     cloudPressureLevels: [],
     surfaceLevels: [10, 80],
@@ -155,7 +155,7 @@ export const MODEL_CONFIGS = {
     baseUrl: ICON_URL,
     modelsParam: null,  // Dedicated endpoint, no models= param
     maxDays: 7,
-    defaultDays: 5,
+    defaultDays: 7,
     pressureLevels: [700, 800, 850, 900, 925, 950, 975, 1000],
     cloudPressureLevels: [700, 800, 850, 900, 925, 950, 975, 1000],
     surfaceLevels: [10, 80, 180],
