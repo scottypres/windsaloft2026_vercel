@@ -62,15 +62,17 @@ const STEPS = [
   },
   {
     title: 'Fog Mode',
-    text: 'Fog Mode automatically enables the Dew Point Spread, Temperature, and Visibility extra rows. It then highlights cells where the dew point and temperature are very close together (small spread), which signals a high likelihood of fog or low visibility. The closer the spread is to zero, the stronger the highlight — helping you spot fog risk at a glance.',
+    text: 'Fog Mode automatically enables the Dew Point Spread, Temperature, and Visibility extra rows. It then highlights cells where the dew point and temperature are very close together (small spread), which signals a high likelihood of fog or low visibility. The closer the spread is to zero, the stronger the highlight — helping you spot fog risk at a glance. Note: accuracy is just OK — use it as one tool among many, not a definitive fog forecast.',
     target: '#fog-mode',
     requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-filters .section-body',
   },
   {
     title: 'Best Hours',
     text: 'Best Hours filters the forecast to only show hours where the surface wind speed is at or below your chosen threshold (default 15 mph). This makes it easy to find the calmest windows for flying. Adjust the threshold number to match your comfort level — lower values show only the lightest wind hours.',
     target: '#best-hours',
     requireVisible: '.bottom-settings-inner',
+    requireExpanded: '#section-filters .section-body',
   },
   {
     title: 'Extra Rows',
@@ -163,11 +165,23 @@ function createOverlay() {
 }
 
 function ensureVisible(step) {
-  if (!step.requireVisible) return;
-  const el = document.querySelector(step.requireVisible);
-  if (el && el.classList.contains('hidden')) {
-    el.classList.remove('hidden');
-    el.dataset.guideOpened = 'true';
+  if (step.requireVisible) {
+    const el = document.querySelector(step.requireVisible);
+    if (el && el.classList.contains('hidden')) {
+      el.classList.remove('hidden');
+      el.dataset.guideOpened = 'true';
+    }
+  }
+  if (step.requireExpanded) {
+    const el = document.querySelector(step.requireExpanded);
+    if (el && el.classList.contains('hidden')) {
+      el.classList.remove('hidden');
+      // Also update the section header toggle state
+      const header = el.previousElementSibling;
+      if (header && header.classList.contains('collapsed')) {
+        header.classList.remove('collapsed');
+      }
+    }
   }
 }
 
