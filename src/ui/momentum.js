@@ -1,5 +1,5 @@
 // Amplified drag scrolling - drags scroll faster than 1:1
-const DRAG_MULTIPLIER = 2.5;
+const DRAG_MULTIPLIER = 2.0;
 // Minimum pixel movement before locking to an axis
 const AXIS_LOCK_THRESHOLD = 6;
 
