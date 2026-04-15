@@ -13,7 +13,7 @@ for (const id of MODEL_ORDER) {
 const DEFAULTS = {
   view: 'wind',
   showDaylightOnly: true,
-  hideHighAltitude: true,
+  hideHighAltitude: false,
   showWindShear: false,
   showFogMode: false,
   bestHoursThreshold: null,
