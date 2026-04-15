@@ -481,37 +481,7 @@ function initBottomSettings() {
     window.location.href = 'mai' + 'lto:' + u + '@' + d + '.' + t;
   });
 
-  // Column guide toggle
-  const colGuideOverlay = document.getElementById('col-guide-overlay');
-  const colHighlightCheckbox = document.getElementById('col-highlight');
 
-  function updateColGuide() {
-    if (colGuideOverlay.classList.contains('hidden')) return;
-    const wrapper = document.querySelector('.tables-wrapper');
-    const wrapperRect = wrapper.getBoundingClientRect();
-
-    // Measure actual cell width from the DOM
-    const cell = document.querySelector('.forecast-table .cell');
-    const cellWidth = cell ? cell.offsetWidth : 20;
-
-    // Center of data area (offset by sticky alt-label column)
-    const altLabel = document.querySelector('.forecast-table .alt-label');
-    const altWidth = altLabel ? altLabel.offsetWidth : 45;
-    const center = wrapperRect.left + altWidth + (wrapperRect.width - altWidth) / 2;
-
-    colGuideOverlay.style.left = (center - cellWidth / 2) + 'px';
-    colGuideOverlay.style.width = cellWidth + 'px';
-    colGuideOverlay.style.top = wrapperRect.top + 'px';
-    colGuideOverlay.style.bottom = (window.innerHeight - wrapperRect.bottom) + 'px';
-  }
-
-  colHighlightCheckbox.addEventListener('change', () => {
-    colGuideOverlay.classList.toggle('hidden', !colHighlightCheckbox.checked);
-    document.body.classList.toggle('col-guide', colHighlightCheckbox.checked);
-    updateColGuide();
-  });
-
-  window.addEventListener('resize', updateColGuide);
 
   // Wind color thresholds
   initWindColorControls();

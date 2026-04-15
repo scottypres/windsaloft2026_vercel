@@ -491,14 +491,6 @@ body {
   width: fit-content;
 }
 
-/* === Column Guide Overlay === */
-.col-guide-overlay {
-  position: fixed;
-  pointer-events: none;
-  z-index: 10;
-  border-left: 2px solid #fff;
-  border-right: 2px solid #fff;
-}
 
 
 /* === Tables === */

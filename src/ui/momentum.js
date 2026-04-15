@@ -3,17 +3,6 @@ const DRAG_MULTIPLIER = 2.5;
 // Minimum pixel movement before locking to an axis
 const AXIS_LOCK_THRESHOLD = 6;
 
-function snapToColumn(container) {
-  if (!document.body.classList.contains('col-guide')) return;
-  const cell = container.querySelector('.cell');
-  if (!cell) return;
-  const cellWidth = cell.offsetWidth;
-  if (cellWidth <= 0) return;
-
-  const snapped = Math.round(container.scrollLeft / cellWidth) * cellWidth;
-  container.scrollTo({ left: snapped, behavior: 'smooth' });
-}
-
 export function enableMomentumScroll(container) {
   let isDragging = false;
   let startX, scrollLeftStart;
@@ -42,7 +31,6 @@ export function enableMomentumScroll(container) {
     isDragging = false;
     container.style.cursor = '';
     container.style.userSelect = '';
-    snapToColumn(container);
   });
 
   // Touch drag — axis-locked
@@ -81,9 +69,6 @@ export function enableMomentumScroll(container) {
   }, { passive: false });
 
   container.addEventListener('touchend', () => {
-    if (touchAxis === 'x') {
-      snapToColumn(container);
-    }
     touchAxis = null;
   }, { passive: true });
 }
