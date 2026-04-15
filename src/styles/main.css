@@ -165,23 +165,8 @@ body {
   background: var(--border);
 }
 
-#toggle-settings,
-#toggle-settings:link,
-#toggle-settings:visited,
-#toggle-settings:active,
-#toggle-settings:focus {
-  background: var(--accent);
-  color: #fff !important;
-  border-color: var(--accent);
-  font-weight: 600;
-  padding: 0.4rem 1rem;
-  font-size: 0.9rem;
-  -webkit-text-fill-color: #fff;
-}
-
-#toggle-settings:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+#toggle-locations:hover {
+  background: var(--border);
 }
 
 /* === Top Bar (Location + Controls) === */
@@ -794,19 +779,21 @@ body {
 }
 
 .bottom-settings-toggle-btn {
-  padding: 0.3rem 1rem;
-  background: var(--bg-panel);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+  padding: 0.4rem 1.2rem;
+  background: var(--accent);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  border: 1px solid var(--accent);
   border-bottom: none;
   border-radius: 6px 6px 0 0;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .bottom-settings-toggle-btn:hover {
-  color: var(--text);
-  background: var(--border);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .bottom-settings-inner {

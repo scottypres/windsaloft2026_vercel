@@ -348,6 +348,7 @@ function initBottomSettings() {
 
   toggleBtn.addEventListener('click', () => {
     inner.classList.toggle('hidden');
+    toggleBtn.textContent = inner.classList.contains('hidden') ? 'Settings' : 'Hide';
   });
 
   // Collapsible section headers
@@ -537,13 +538,13 @@ function applyCellBorders(enabled) {
 }
 
 function initSettingsToggle() {
-  const btn = document.getElementById('toggle-settings');
+  const btn = document.getElementById('toggle-locations');
   const topBar = document.getElementById('top-bar');
   const bottomInner = document.querySelector('.bottom-settings-inner');
 
   const updateVisibility = () => {
     topBar.classList.toggle('hidden', !prefs.settingsVisible);
-    btn.textContent = prefs.settingsVisible ? 'Hide' : 'Settings';
+    btn.textContent = prefs.settingsVisible ? 'Hide' : 'Locations';
   };
 
   btn.addEventListener('click', () => {
