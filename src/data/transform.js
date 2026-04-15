@@ -306,38 +306,57 @@ export function transformEnsembleData(raw, ensembleModelId) {
     };
   });
 
-  // Surface data from ensemble means
-  const sf = (param) => hourly[`${param}${suffix}`] || [];
-  const sfOrNull = (param) => {
-    const arr = hourly[`${param}${suffix}`];
-    return arr && arr.some((v) => v != null) ? arr : null;
-  };
+  // Surface data from ensemble means + spread
+  const sfms = (param) => extractEnsembleMeanAndSpread(hourly, param, suffix, mc, numHours);
 
-  const temp2m = sf('temperature_2m');
-  const dewpoint = sf('dew_point_2m');
+  const gustsData = sfms('wind_gusts_10m');
+  const capeData = sfms('cape');
+  const rainData = sfms('rain');
+  const temp2mData = sfms('temperature_2m');
+  const humidityData = sfms('relative_humidity_2m');
+  const dewpointData = sfms('dew_point_2m');
+  const visData = sfms('visibility');
+  const cloudCoverData = sfms('cloud_cover');
+  const cloudLowData = sfms('cloud_cover_low');
+  const cloudMidData = sfms('cloud_cover_mid');
+  const cloudHighData = sfms('cloud_cover_high');
+
+  const temp2m = temp2mData.mean;
+  const dewpoint = dewpointData.mean;
 
   const surface = {
-    gusts: sf('wind_gusts_10m'),
-    cape: sfOrNull('cape'),
+    gusts: gustsData.mean,
+    gustsSpread: gustsData.spread,
+    cape: capeData.mean.some((v) => v != null) ? capeData.mean : null,
+    capeSpread: capeData.spread,
     liftedIndex: null,
     precipProb: null,
     precipInches: null,
-    rainInches: sfOrNull('rain'),
+    rainInches: rainData.mean.some((v) => v != null) ? rainData.mean : null,
+    rainSpread: rainData.spread,
     showersInches: null,
     temp2m,
-    humidity: sf('relative_humidity_2m'),
+    temp2mSpread: temp2mData.spread,
+    humidity: humidityData.mean,
+    humiditySpread: humidityData.spread,
     dewpoint,
     dewpointSpread: temp2m.map((t, i) => {
       const dp = dewpoint[i];
       return t != null && dp != null ? Math.round((t - dp) * 10) / 10 : null;
     }),
-    visibility: sfOrNull('visibility')
-      ? sf('visibility').map((v) => (v != null ? Math.round(v * 0.000621371 * 10) / 10 : null))
+    dewpointSpreadSpread: temp2mData.spread, // spread of temp ≈ spread of dp spread
+    visibility: visData.mean.some((v) => v != null)
+      ? visData.mean.map((v) => (v != null ? Math.round(v * 0.000621371 * 10) / 10 : null))
       : null,
-    cloudCover: sf('cloud_cover'),
-    cloudLow: sf('cloud_cover_low'),
-    cloudMid: sf('cloud_cover_mid'),
-    cloudHigh: sf('cloud_cover_high'),
+    visibilitySpread: visData.spread,
+    cloudCover: cloudCoverData.mean,
+    cloudCoverSpread: cloudCoverData.spread,
+    cloudLow: cloudLowData.mean,
+    cloudLowSpread: cloudLowData.spread,
+    cloudMid: cloudMidData.mean,
+    cloudMidSpread: cloudMidData.spread,
+    cloudHigh: cloudHighData.mean,
+    cloudHighSpread: cloudHighData.spread,
     boundaryLayerHeight: null,
     weatherCode: [],
   };

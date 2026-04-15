@@ -7,7 +7,7 @@ const ICON_URL = 'https://api.open-meteo.com/v1/dwd-icon';
 const ENSEMBLE_URL = 'https://ensemble-api.open-meteo.com/v1/ensemble';
 
 // Display order (top to bottom)
-export const MODEL_ORDER = ['hrrr', 'ecmwf', 'nam', 'gfs_seamless', 'icon'];
+export const MODEL_ORDER = ['hrrr', 'ecmwf', 'gfs_seamless', 'icon', 'nam'];
 
 export const MODEL_CONFIGS = {
   hrrr: {

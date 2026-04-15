@@ -146,7 +146,7 @@ export function renderTable(container, data, options = {}) {
 
   // Supplementary rows
   if (view === 'wind' || view === 'clouds' || isEnsemble) {
-    const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows);
+    const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble);
     const fogLabels = new Set(['DP Spread', 'Temp °F', 'Vis (mi)']);
     for (const row of suppRows) {
       html.push('<tr class="supp-row">');
@@ -189,24 +189,35 @@ export function renderTable(container, data, options = {}) {
   }
 }
 
-function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) {
+function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, isEnsemble) {
   const rows = [];
   const s = data.surface;
+
+  // Helper: for ensemble view, use spread-based color; otherwise use field-specific color
+  function ensOrColor(spreadArr, i, normalBg) {
+    if (isEnsemble && spreadArr) {
+      const sp = spreadArr[i];
+      const bg = spreadColor(sp);
+      return { bg, color: textColorFor(bg) };
+    }
+    return { bg: normalBg, color: textColorFor(normalBg) };
+  }
 
   if (view === 'wind' || view === 'ensemble') {
     if (shown.gusts) {
       rows.push(makeRow('Gusts', hourIndices, (i) => {
         const v = s.gusts[i];
         const val = v != null ? Math.round(v) : '?';
-        return { val, bg: windColor(v, windThresholds), color: textColorFor(windColor(v, windThresholds)) };
+        const { bg, color } = ensOrColor(s.gustsSpread, i, windColor(v, windThresholds));
+        return { val, bg, color };
       }));
     }
     if (shown.cape && s.cape) {
       rows.push(makeRow('CAPE', hourIndices, (i) => {
         const v = s.cape[i];
         const val = v != null ? Math.round(v) : '?';
-        const bg = capeColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.capeSpread, i, capeColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.liftedIndex && s.liftedIndex) {
@@ -230,48 +241,48 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
       rows.push(makeRow('Precip in', hourIndices, (i) => {
         const v = src[i];
         const val = v != null ? v.toFixed(2) : '?';
-        const bg = precipInchesColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.rainSpread, i, precipInchesColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.temp) {
       rows.push(makeRow('Temp °F', hourIndices, (i) => {
         const v = s.temp2m[i];
         const val = v != null ? Math.round(v) : '?';
-        const bg = tempColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.temp2mSpread, i, tempColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.humidity && s.humidity && s.humidity.length) {
       rows.push(makeRow('Humidity', hourIndices, (i) => {
         const v = s.humidity[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = humidityColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.humiditySpread, i, humidityColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.dewpointSpread) {
       rows.push(makeRow('DP Spread', hourIndices, (i) => {
         const v = s.dewpointSpread[i];
         const val = v != null ? `${v}°` : '?';
-        const bg = v != null && v < 3 ? '#e74c3c' : v != null && v < 6 ? '#f0c040' : '#66bb6a';
-        return { val, bg, color: textColorFor(bg) };
+        const normalBg = v != null && v < 3 ? '#e74c3c' : v != null && v < 6 ? '#f0c040' : '#66bb6a';
+        const { bg, color } = ensOrColor(s.dewpointSpreadSpread, i, normalBg);
+        return { val, bg, color };
       }));
     }
     if (shown.visibility && s.visibility) {
       rows.push(makeRow('Vis (mi)', hourIndices, (i) => {
         const v = s.visibility[i];
         const val = v != null ? v.toFixed(1) : '?';
-        const bg = visibilityColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.visibilitySpread, i, visibilityColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.cloudCover) {
       rows.push(makeRow('Clouds %', hourIndices, (i) => {
         const v = s.cloudCover[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        const color = cloudTextColor(v);
+        const { bg, color } = ensOrColor(s.cloudCoverSpread, i, cloudColor(v));
         return { val, bg, color };
       }));
     }
@@ -279,24 +290,24 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
       rows.push(makeRow('Low Cld', hourIndices, (i) => {
         const v = s.cloudLow[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        return { val, bg, color: cloudTextColor(v) };
+        const { bg, color } = ensOrColor(s.cloudLowSpread, i, cloudColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.cloudMid && s.cloudMid && s.cloudMid.length) {
       rows.push(makeRow('Mid Cld', hourIndices, (i) => {
         const v = s.cloudMid[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        return { val, bg, color: cloudTextColor(v) };
+        const { bg, color } = ensOrColor(s.cloudMidSpread, i, cloudColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.cloudHigh && s.cloudHigh && s.cloudHigh.length) {
       rows.push(makeRow('High Cld', hourIndices, (i) => {
         const v = s.cloudHigh[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        return { val, bg, color: cloudTextColor(v) };
+        const { bg, color } = ensOrColor(s.cloudHighSpread, i, cloudColor(v));
+        return { val, bg, color };
       }));
     }
   }
