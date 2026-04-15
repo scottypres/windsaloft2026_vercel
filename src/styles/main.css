@@ -165,13 +165,18 @@ body {
   background: var(--border);
 }
 
-#toggle-settings {
+#toggle-settings,
+#toggle-settings:link,
+#toggle-settings:visited,
+#toggle-settings:active,
+#toggle-settings:focus {
   background: var(--accent);
-  color: #fff;
+  color: #fff !important;
   border-color: var(--accent);
   font-weight: 600;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
+  -webkit-text-fill-color: #fff;
 }
 
 #toggle-settings:hover {
