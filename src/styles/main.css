@@ -491,23 +491,13 @@ body {
   width: fit-content;
 }
 
-/* === Column Guide (per-table vertical lines + scroll snap) === */
-body.col-guide .table-section:not(.hidden):not(.empty) {
-  position: relative;
-}
-
-body.col-guide .table-section:not(.hidden):not(.empty)::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(50% + var(--alt-width) / 2);
-  transform: translateX(-50%);
-  width: calc(var(--cell-width) + var(--cell-pad) * 2 + var(--border-width));
+/* === Column Guide Overlay === */
+.col-guide-overlay {
+  position: fixed;
+  pointer-events: none;
+  z-index: 10;
   border-left: 2px solid #fff;
   border-right: 2px solid #fff;
-  pointer-events: none;
-  z-index: 5;
 }
 
 
