@@ -4,6 +4,7 @@ import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
 import { enableMomentumScroll } from './ui/momentum.js';
+import { setColumnGuide, applyGuideLines, enableSnapScroll } from './ui/columnGuide.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
 import { windColor } from './data/colors.js';
@@ -177,9 +178,12 @@ function rerender() {
   updateTableSectionVisibility();
   setupScrollSync();
 
-  // Enable momentum scroll on all visible containers
+  // Enable momentum scroll and column guide on all visible containers
+  setColumnGuide(!!prefs.showColumnGuide);
   document.querySelectorAll('.table-section:not(.hidden) .table-container').forEach((el) => {
     enableMomentumScroll(el);
+    applyGuideLines(el);
+    enableSnapScroll(el);
   });
 }
 
@@ -314,6 +318,8 @@ async function renderAllLocations() {
 
       renderTable(tableDiv, data, getTableOptions());
       enableMomentumScroll(tableDiv);
+      applyGuideLines(tableDiv);
+      enableSnapScroll(tableDiv);
     }
     setupAllLocationsScrollSync();
   } catch (err) {

@@ -16,6 +16,7 @@ const DEFAULTS = {
   hideHighAltitude: true,
   showWindShear: false,
   showFogMode: false,
+  showColumnGuide: false,
   bestHoursThreshold: null,
   windThresholds: { calm: 7, moderate: 13, strong: 21 },
   modelToggles: { ...DEFAULT_TOGGLES },

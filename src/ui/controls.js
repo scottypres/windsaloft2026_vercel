@@ -41,6 +41,11 @@ export function initControls(callbacks) {
     });
   }
 
+  // Column guide
+  document.getElementById('column-guide').addEventListener('change', (e) => {
+    callbacks.onToggle('showColumnGuide', e.target.checked);
+  });
+
   // Fog mode: auto-enable related supplementary rows
   document.getElementById('fog-mode').addEventListener('change', (e) => {
     callbacks.onToggle('showFogMode', e.target.checked);
@@ -137,6 +142,7 @@ export function restoreControlState(prefs) {
     hideHighAltitude: 'hide-high-alt',
     showWindShear: 'wind-shear',
     showFogMode: 'fog-mode',
+    showColumnGuide: 'column-guide',
   };
   for (const [key, id] of Object.entries(checkboxMap)) {
     const el = document.getElementById(id);

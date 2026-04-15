@@ -951,6 +951,11 @@ body {
   width: 90px;
 }
 
+/* === Column Guide === */
+.col-guide-line {
+  border-left: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .top-bar {
