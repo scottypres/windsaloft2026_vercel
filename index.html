@@ -17,6 +17,7 @@
           <button class="view-btn" data-view="clouds">Clouds</button>
           <button class="view-btn" data-view="ensemble">Ensemble</button>
         </div>
+        <button id="show-all-locations" class="toggle-settings-btn">All Locations</button>
         <button id="toggle-settings" class="toggle-settings-btn">Settings</button>
       </div>
     </header>
@@ -122,8 +123,6 @@
             <input type="range" data-model-days="nam" min="1" max="4" value="4" class="range-input">
             <span data-model-days-val="nam">4</span>d
           </label>
-          <button id="show-all-locations" class="action-btn">Show All Locations</button>
-          <button id="reset-defaults" class="action-btn danger-btn">Reset Defaults</button>
         </div>
       </div>
 
@@ -200,6 +199,9 @@
           </div>
           <div id="wind-gradient-preview" class="wind-gradient-preview"></div>
         </div>
+      </div>
+      <div class="settings-section settings-reset">
+        <button id="reset-defaults" class="action-btn danger-btn">Reset Defaults</button>
       </div>
     </div>
     <button id="bottom-settings-toggle" class="bottom-settings-toggle-btn">Settings</button>
