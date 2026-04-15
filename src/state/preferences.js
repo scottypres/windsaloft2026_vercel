@@ -46,7 +46,7 @@ const DEFAULTS = {
     headerHeight: 20,
     fontSize: 9,
     headerFontSize: 10,
-    altWidth: 30,
+    altWidth: 45,
     suppFontSize: 7,
     cellPad: 1,
     arrowSize: 9,
