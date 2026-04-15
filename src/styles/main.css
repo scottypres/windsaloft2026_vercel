@@ -503,9 +503,9 @@ body.col-guide .table-section:not(.hidden):not(.empty)::after {
   bottom: 0;
   left: calc(50% + var(--alt-width) / 2);
   transform: translateX(-50%);
-  width: var(--cell-width);
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
-  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  width: calc(var(--cell-width) + var(--cell-pad) * 2 + var(--border-width));
+  border-left: 2px solid #fff;
+  border-right: 2px solid #fff;
   pointer-events: none;
   z-index: 5;
 }
