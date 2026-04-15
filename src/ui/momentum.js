@@ -1,19 +1,20 @@
-// Mouse drag scrolling with multiplier (desktop only).
-// Touch scrolling is handled natively by the browser for maximum smoothness.
-const DRAG_MULTIPLIER = 1.5;
+// Amplified drag scrolling - drags scroll faster than 1:1
+const DRAG_MULTIPLIER = 2.5;
 
 export function enableMomentumScroll(container) {
   let isDragging = false;
-  let startX, scrollLeftStart;
+  let startX, startY, scrollLeftStart, scrollTopStart;
 
-  // Mouse drag — horizontal only
+  // Mouse drag
   container.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('input, button, select, a')) return;
 
     isDragging = true;
     startX = e.clientX;
+    startY = e.clientY;
     scrollLeftStart = container.scrollLeft;
+    scrollTopStart = container.scrollTop;
     container.style.cursor = 'grabbing';
     container.style.userSelect = 'none';
     e.preventDefault();
@@ -22,7 +23,9 @@ export function enableMomentumScroll(container) {
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     const dx = (e.clientX - startX) * DRAG_MULTIPLIER;
+    const dy = (e.clientY - startY) * DRAG_MULTIPLIER;
     container.scrollLeft = scrollLeftStart - dx;
+    container.scrollTop = scrollTopStart - dy;
   });
 
   window.addEventListener('mouseup', () => {
@@ -32,33 +35,23 @@ export function enableMomentumScroll(container) {
     container.style.userSelect = '';
   });
 
-  // Multi-touch lock: prevent horizontal drift during two-finger vertical scrolls.
-  // Uses the scroll event to catch and correct compositor-driven drift.
-  let multiTouchActive = false;
-  let lockedScrollLeft = null;
+  // Touch drag
+  let touchStartX, touchStartY, touchScrollLeft, touchScrollTop;
 
   container.addEventListener('touchstart', (e) => {
-    if (e.touches.length >= 2) {
-      multiTouchActive = true;
-      lockedScrollLeft = container.scrollLeft;
-    }
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchScrollLeft = container.scrollLeft;
+    touchScrollTop = container.scrollTop;
   }, { passive: true });
 
-  container.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0 && multiTouchActive) {
-      // Keep lock briefly to catch post-release scroll inertia
-      const saved = lockedScrollLeft;
-      setTimeout(() => {
-        if (saved !== null) container.scrollLeft = saved;
-        multiTouchActive = false;
-        lockedScrollLeft = null;
-      }, 150);
-    }
-  }, { passive: true });
-
-  container.addEventListener('scroll', () => {
-    if (multiTouchActive && lockedScrollLeft !== null && container.scrollLeft !== lockedScrollLeft) {
-      container.scrollLeft = lockedScrollLeft;
-    }
-  });
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 1) return;
+    const dx = (e.touches[0].clientX - touchStartX) * DRAG_MULTIPLIER;
+    const dy = (e.touches[0].clientY - touchStartY) * DRAG_MULTIPLIER;
+    container.scrollLeft = touchScrollLeft - dx;
+    container.scrollTop = touchScrollTop - dy;
+    e.preventDefault();
+  }, { passive: false });
 }
