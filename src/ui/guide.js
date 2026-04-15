@@ -286,6 +286,16 @@ function endGuide() {
     overlayEl.remove();
     overlayEl = null;
   }
+  // Close locations panel and bottom settings
+  const topBar = document.getElementById('top-bar');
+  const locBtn = document.getElementById('toggle-locations');
+  if (topBar) topBar.classList.add('hidden');
+  if (locBtn) locBtn.textContent = 'Locations';
+  const bottomInner = document.querySelector('.bottom-settings-inner');
+  if (bottomInner) bottomInner.classList.add('hidden');
+  const bottomToggle = document.getElementById('bottom-settings-toggle');
+  if (bottomToggle) bottomToggle.textContent = 'Settings';
+
   localStorage.setItem(GUIDE_SEEN_KEY, 'true');
   if (onComplete) onComplete();
 }
