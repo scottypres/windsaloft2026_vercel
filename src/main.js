@@ -368,6 +368,7 @@ function initBottomSettings() {
   document.getElementById('open-layout-popup').addEventListener('click', () => {
     layoutPopup.classList.remove('hidden');
     inner.classList.add('hidden');
+    toggleBtn.textContent = 'Settings';
   });
   document.getElementById('layout-popup-done').addEventListener('click', () => {
     layoutPopup.classList.add('hidden');
@@ -462,6 +463,8 @@ function initBottomSettings() {
   const modelInfoPopup = document.getElementById('model-info-popup');
   document.getElementById('model-info-btn').addEventListener('click', () => {
     modelInfoPopup.classList.remove('hidden');
+    inner.classList.add('hidden');
+    toggleBtn.textContent = 'Settings';
   });
   document.getElementById('model-info-popup-done').addEventListener('click', () => {
     modelInfoPopup.classList.add('hidden');
