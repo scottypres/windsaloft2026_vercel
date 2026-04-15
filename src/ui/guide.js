@@ -114,7 +114,7 @@ const STEPS = [
     title: 'Ensemble View',
     text: 'Now let\'s look at the Ensemble view! Switching to it automatically...',
     target: '#view-dropdown',
-    action: 'switchToEnsemble',
+    action: 'closeAllAndSwitchToEnsemble',
   },
   {
     title: 'Reading Ensemble Data',
@@ -233,6 +233,14 @@ function executeAction(step) {
     if (menu) menu.classList.add('hidden');
     // Collapse all sections
     collapseAllSections();
+  } else if (step.action === 'closeAllAndSwitchToEnsemble') {
+    // Hide bottom settings
+    const bottomInner = document.querySelector('.bottom-settings-inner');
+    if (bottomInner) bottomInner.classList.add('hidden');
+    const bottomToggle = document.getElementById('bottom-settings-toggle');
+    if (bottomToggle) bottomToggle.textContent = 'Settings';
+    collapseAllSections();
+    if (actionHandler) actionHandler('switchToEnsemble');
   } else if (actionHandler) {
     // Delegate to main.js handler
     actionHandler(step.action);
