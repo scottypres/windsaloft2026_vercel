@@ -3,7 +3,7 @@ const GUIDE_SEEN_KEY = 'soar_guide_seen';
 const STEPS = [
   {
     title: 'Welcome to Soar Forecaster!',
-    text: 'This guide will walk you through the app so you can get the most out of it. Tip: use two fingers to scroll tables up and down, and one finger to scroll them left and right! You can skip this guide anytime and replay it later from the Guide button.',
+    text: 'This guide will walk you through the app so you can get the most out of it. Tip: <b><u>use two fingers to scroll tables up and down</u></b>, and one finger to scroll them left and right! You can skip this guide anytime and replay it later from the Guide button.',
     target: null,
   },
   {
@@ -46,7 +46,7 @@ const STEPS = [
   },
   {
     title: 'The Forecast Tables',
-    text: 'Each table shows one weather model. Rows are altitudes (surface at the bottom, higher altitudes above). Columns are hours. Swipe left/right to scroll through time — all model tables scroll together so you can compare the same hour across models. Use two fingers to scroll the page up and down between tables.',
+    text: 'Each table shows one weather model. Rows are altitudes (surface at the bottom, higher altitudes above). Columns are hours. Swipe left/right to scroll through time — all model tables scroll together so you can compare the same hour across models. <b><u>Use two fingers to scroll the page up and down between tables.</u></b>',
     target: '.tables-wrapper',
   },
   {
@@ -115,7 +115,7 @@ const STEPS = [
   },
   {
     title: "You're all set!",
-    text: 'Start by searching for a location or tapping GPS. Scroll through the tables to explore the forecast. Remember: two fingers to scroll up/down between models, one finger to scroll left/right through hours. Enjoy!',
+    text: 'Start by searching for a location or tapping GPS. Scroll through the tables to explore the forecast. Remember: <b><u>two fingers to scroll up/down between models</u></b>, one finger to scroll left/right through hours. Enjoy!',
     target: null,
   },
 ];
@@ -214,7 +214,7 @@ function goToStep(idx) {
 
     // Update content
     overlayEl.querySelector('.guide-title').textContent = step.title;
-    overlayEl.querySelector('.guide-text').textContent = step.text;
+    overlayEl.querySelector('.guide-text').innerHTML = step.text;
     overlayEl.querySelector('.guide-progress').textContent = `${currentStep + 1} / ${STEPS.length}`;
 
     // Button visibility
