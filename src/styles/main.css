@@ -134,7 +134,7 @@ body {
   padding: 0.4rem 0.75rem;
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: #fff;
   font-size: 0.85rem;
   cursor: pointer;
   text-align: left;
@@ -143,18 +143,18 @@ body {
 
 .view-dropdown-item:hover {
   background: var(--bg-surface);
-  color: var(--text);
+  color: #fff;
 }
 
 .view-dropdown-item.active {
-  color: var(--accent);
+  color: #fff;
   font-weight: 600;
 }
 
 .toggle-settings-btn {
   padding: 0.3rem 0.75rem;
   background: var(--bg-panel);
-  color: var(--text);
+  color: #fff;
   border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
