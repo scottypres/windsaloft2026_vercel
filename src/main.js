@@ -473,6 +473,14 @@ function initBottomSettings() {
     modelInfoPopup.classList.add('hidden');
   });
 
+  // Contact button — email assembled at runtime to avoid scraping
+  document.getElementById('contact-btn').addEventListener('click', () => {
+    const u = 'scottypres';
+    const d = 'gmail';
+    const t = 'com';
+    window.location.href = 'mai' + 'lto:' + u + '@' + d + '.' + t;
+  });
+
   // Wind color thresholds
   initWindColorControls();
 

@@ -442,6 +442,17 @@ body {
   color: #fff;
 }
 
+.contact-btn {
+  margin-top: 0.3rem;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.contact-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* === Loading === */
 .loading {
   display: flex;
@@ -475,6 +486,9 @@ body {
   font-weight: 700;
   color: var(--text);
   padding: 2px 4px 1px;
+  position: sticky;
+  left: 0;
+  width: fit-content;
 }
 
 /* === Tables === */
