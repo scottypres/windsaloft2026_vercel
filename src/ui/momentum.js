@@ -32,28 +32,33 @@ export function enableMomentumScroll(container) {
     container.style.userSelect = '';
   });
 
-  // Multi-touch lock: prevent horizontal drift during two-finger vertical scrolls
-  let multiTouchLock = null;
+  // Multi-touch lock: prevent horizontal drift during two-finger vertical scrolls.
+  // Uses the scroll event to catch and correct compositor-driven drift.
+  let multiTouchActive = false;
+  let lockedScrollLeft = null;
 
   container.addEventListener('touchstart', (e) => {
     if (e.touches.length >= 2) {
-      multiTouchLock = container.scrollLeft;
-    }
-  }, { passive: true });
-
-  container.addEventListener('touchmove', (e) => {
-    if (e.touches.length >= 2 && multiTouchLock !== null) {
-      container.scrollLeft = multiTouchLock;
+      multiTouchActive = true;
+      lockedScrollLeft = container.scrollLeft;
     }
   }, { passive: true });
 
   container.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0 && multiTouchLock !== null) {
-      container.scrollLeft = multiTouchLock;
-      requestAnimationFrame(() => {
-        container.scrollLeft = multiTouchLock;
-        multiTouchLock = null;
-      });
+    if (e.touches.length === 0 && multiTouchActive) {
+      // Keep lock briefly to catch post-release scroll inertia
+      const saved = lockedScrollLeft;
+      setTimeout(() => {
+        if (saved !== null) container.scrollLeft = saved;
+        multiTouchActive = false;
+        lockedScrollLeft = null;
+      }, 150);
     }
   }, { passive: true });
+
+  container.addEventListener('scroll', () => {
+    if (multiTouchActive && lockedScrollLeft !== null && container.scrollLeft !== lockedScrollLeft) {
+      container.scrollLeft = lockedScrollLeft;
+    }
+  });
 }
