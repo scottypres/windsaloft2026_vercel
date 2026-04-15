@@ -78,7 +78,7 @@ export function loadPrefs() {
       modelDays.icon = saved.iconDays;
     }
 
-    return {
+    const prefs = {
       ...DEFAULTS,
       ...saved,
       windThresholds: { ...DEFAULTS.windThresholds, ...saved.windThresholds },
@@ -88,6 +88,11 @@ export function loadPrefs() {
       layout: { ...DEFAULTS.layout, ...saved.layout },
       savedLocations: saved.savedLocations || [],
     };
+
+    // Always start on wind view after refresh
+    if (prefs.view === 'ensemble') prefs.view = 'wind';
+
+    return prefs;
   } catch {
     return freshDefaults();
   }
