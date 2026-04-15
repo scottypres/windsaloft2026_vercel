@@ -29,6 +29,7 @@
   --alt-width: 60px;
   --cell-pad: 2px;
   --arrow-size: 10px;
+  --arrow-gap: 0px;
   --table-gap: 8px;
   --border-width: 0.5px;
   --day-border-width: 3px;
@@ -361,6 +362,15 @@ body {
   text-align: center;
 }
 
+.select-input {
+  padding: 0.2rem 0.3rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 16px;
+}
+
 .range-input {
   width: 80px;
   accent-color: var(--accent);
@@ -542,6 +552,7 @@ body {
   line-height: 0;
   display: block;
   height: var(--arrow-size);
+  margin-top: var(--arrow-gap);
 }
 
 .wind-arrow {

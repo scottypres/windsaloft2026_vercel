@@ -50,12 +50,18 @@ const DEFAULTS = {
     suppFontSize: 7,
     cellPad: 1,
     arrowSize: 9,
+    arrowGap: 0,
+    arrowStyle: 'classic',
     tableGap: 6,
     borderWidth: 0.5,
     dayBorderWidth: 3,
     cellBorders: false,
   },
 };
+
+export function getDefaultLayout() {
+  return { ...DEFAULTS.layout };
+}
 
 export function loadPrefs() {
   try {

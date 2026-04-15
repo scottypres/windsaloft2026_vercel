@@ -4,12 +4,14 @@ import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
 import { enableMomentumScroll } from './ui/momentum.js';
+import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { windColor } from './data/colors.js';
 import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
 import {
   loadPrefs,
   savePrefs,
   resetPrefs,
+  getDefaultLayout,
   addSavedLocation,
   removeSavedLocation,
 } from './state/preferences.js';
@@ -332,7 +334,9 @@ function applyLayout(layout) {
   root.style.setProperty('--supp-font-size', `${layout.suppFontSize}px`);
   root.style.setProperty('--cell-pad', `${layout.cellPad}px`);
   root.style.setProperty('--arrow-size', `${layout.arrowSize}px`);
+  root.style.setProperty('--arrow-gap', `${layout.arrowGap}px`);
   root.style.setProperty('--table-gap', `${layout.tableGap}px`);
+  if (layout.arrowStyle) setArrowStyle(layout.arrowStyle);
   root.style.setProperty('--border-width', `${layout.borderWidth}px`);
   root.style.setProperty('--day-border-width', `${layout.dayBorderWidth}px`);
 }
@@ -361,6 +365,7 @@ function initBottomSettings() {
   const layoutPopup = document.getElementById('layout-popup');
   document.getElementById('open-layout-popup').addEventListener('click', () => {
     layoutPopup.classList.remove('hidden');
+    inner.classList.add('hidden');
   });
   document.getElementById('layout-popup-done').addEventListener('click', () => {
     layoutPopup.classList.add('hidden');
@@ -382,6 +387,7 @@ function initBottomSettings() {
     'layout-supp-font-size': 'suppFontSize',
     'layout-cell-pad': 'cellPad',
     'layout-arrow-size': 'arrowSize',
+    'layout-arrow-gap': 'arrowGap',
     'layout-table-gap': 'tableGap',
     'layout-border-width': 'borderWidth',
     'layout-day-border-width': 'dayBorderWidth',
@@ -414,6 +420,40 @@ function initBottomSettings() {
     prefs.layout.cellBorders = bordersCheckbox.checked;
     applyCellBorders(bordersCheckbox.checked);
     savePrefs(prefs);
+  });
+
+  // Arrow style select
+  const arrowStyleSelect = document.getElementById('layout-arrow-style');
+  if (prefs.layout.arrowStyle) arrowStyleSelect.value = prefs.layout.arrowStyle;
+  arrowStyleSelect.addEventListener('change', () => {
+    prefs.layout.arrowStyle = arrowStyleSelect.value;
+    setArrowStyle(arrowStyleSelect.value);
+    savePrefs(prefs);
+    rerender();
+  });
+
+  // Layout reset
+  document.getElementById('layout-reset').addEventListener('click', () => {
+    if (confirm('Reset layout to defaults?')) {
+      const defaults = getDefaultLayout();
+      prefs.layout = defaults;
+      savePrefs(prefs);
+      applyLayout(defaults);
+      applyCellBorders(defaults.cellBorders);
+      setArrowStyle(defaults.arrowStyle);
+      // Update all slider values in the UI
+      for (const [id, key] of Object.entries(sliders)) {
+        const s = document.getElementById(id);
+        const v = document.getElementById(`${id}-val`);
+        if (s && defaults[key] != null) {
+          s.value = defaults[key];
+          if (v) v.textContent = defaults[key];
+        }
+      }
+      bordersCheckbox.checked = !!defaults.cellBorders;
+      arrowStyleSelect.value = defaults.arrowStyle || 'classic';
+      rerender();
+    }
   });
 
   // Wind color thresholds

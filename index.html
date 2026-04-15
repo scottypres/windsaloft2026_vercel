@@ -200,6 +200,19 @@
           <input type="range" id="layout-arrow-size" min="0" max="18" value="10" class="range-input">
           <span id="layout-arrow-size-val">10</span>
         </label>
+        <label class="inline-label">Arrow Gap
+          <input type="range" id="layout-arrow-gap" min="-4" max="6" value="0" class="range-input">
+          <span id="layout-arrow-gap-val">0</span>
+        </label>
+        <label class="inline-label">Arrow Style
+          <select id="layout-arrow-style" class="select-input">
+            <option value="classic">Classic</option>
+            <option value="triangle">Triangle</option>
+            <option value="thin">Thin</option>
+            <option value="dot">Dot</option>
+            <option value="chevron">Chevron</option>
+          </select>
+        </label>
         <label class="inline-label">Gap
           <input type="range" id="layout-table-gap" min="0" max="24" value="8" class="range-input">
           <span id="layout-table-gap-val">8</span>
@@ -213,6 +226,7 @@
           <span id="layout-day-border-width-val">3</span>
         </label>
         <label class="toggle-label"><input type="checkbox" id="layout-cell-borders"> Cell Borders</label>
+        <button id="layout-reset" class="small-btn danger-btn" style="margin-top:0.5rem">Reset Layout</button>
       </div>
     </div>
   </div>
