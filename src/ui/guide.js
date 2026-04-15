@@ -3,86 +3,119 @@ const GUIDE_SEEN_KEY = 'soar_guide_seen';
 const STEPS = [
   {
     title: 'Welcome to Soar Forecaster!',
-    text: 'This quick guide will walk you through the app. You can skip anytime.',
-    target: null, // no highlight, centered overlay
+    text: 'This guide will walk you through the app so you can get the most out of it. Tip: use two fingers to scroll tables up and down, and one finger to scroll them left and right! You can skip this guide anytime and replay it later from the Guide button.',
+    target: null,
   },
   {
     title: 'View Selector',
-    text: 'Switch between Wind, Temp, Clouds, and Ensemble views. Wind shows wind speed and direction at various altitudes. Temp shows temperature profiles. Clouds shows cloud cover at different levels. Ensemble shows probabilistic forecasts from multiple model runs.',
+    text: 'Tap this dropdown to switch between four views:\n\n' +
+      'Wind — wind speed (colored by intensity) and direction arrows at multiple altitudes, from surface level up to several thousand feet.\n\n' +
+      'Temp — temperature profiles at each altitude, color-coded from cool to warm.\n\n' +
+      'Clouds — cloud cover percentage at different pressure levels, helping you spot clear windows and overcast layers.\n\n' +
+      'Ensemble — probabilistic forecasts explained in a later step!',
     target: '#view-dropdown',
   },
   {
     title: 'Locations',
-    text: 'Open the location panel to search for a location, use GPS, or pick from your saved locations.',
+    text: 'Tap here to open the location panel where you can search for any place, use your GPS, or quickly switch between saved locations. When you select a location, forecasts from all enabled models load automatically.',
     target: '#toggle-locations',
   },
   {
     title: 'Location Search',
-    text: 'Type a city or place name to search. Results appear in a dropdown — tap one to load its forecast.',
+    text: 'Type a city, town, or place name and results will appear below. Tap a result to load the forecast for that location. The search uses geocoding to find coordinates for any place worldwide.',
     target: '#location-search',
     requireVisible: '#top-bar',
   },
   {
     title: 'GPS',
-    text: 'Tap GPS to use your current location for the forecast.',
+    text: 'Tap GPS to automatically detect your current position and load the forecast for where you are right now. Your browser will ask for location permission.',
     target: '#gps-btn',
     requireVisible: '#top-bar',
   },
   {
     title: 'Save Locations',
-    text: 'After selecting a location, tap Save Current to add it to your saved list for quick access.',
+    text: 'Once you have a location loaded, tap Save Current to bookmark it. You can save up to 6 locations for quick access. Saved locations appear in the list below and persist between sessions.',
     target: '#save-location-btn',
     requireVisible: '#top-bar',
   },
   {
     title: 'Show All Locations Forecast',
-    text: 'View forecasts for all your saved locations at once, side by side.',
+    text: 'Tap this to see the forecast for every saved location at once, stacked vertically. Great for comparing conditions across multiple flying sites in a single glance. Tap again to return to the single-location view.',
     target: '#show-all-locations',
     requireVisible: '#top-bar',
   },
   {
+    title: 'The Forecast Tables',
+    text: 'Each table shows one weather model. Rows are altitudes (surface at the bottom, higher altitudes above). Columns are hours. Swipe left/right to scroll through time — all model tables scroll together so you can compare the same hour across models. Use two fingers to scroll the page up and down between tables.',
+    target: '.tables-wrapper',
+  },
+  {
     title: 'Settings',
-    text: 'Open the settings panel to customize filters, extra data rows, model selection, layout, and wind colors.',
+    text: 'Tap Settings to open the control panel at the bottom. Here you\'ll find Filters, Extra Rows, Model selection, Layout customization, and Wind Color thresholds. Each section expands when tapped.',
     target: '#bottom-settings-toggle',
   },
   {
     title: 'Filters',
-    text: 'Toggle Daylight Only to hide nighttime hours. Hide altitudes above 5k ft. Enable Wind Shear highlighting, Fog Mode, or Best Hours filtering.',
+    text: 'Daylight Only hides nighttime hours to focus on flyable times. Hide >5k ft removes high-altitude rows. Wind Shear outlines cells where wind changes sharply between altitudes. Fog Mode and Best Hours are covered in the next steps.',
     target: '#section-filters',
     requireVisible: '.bottom-settings-inner',
   },
   {
+    title: 'Fog Mode',
+    text: 'Fog Mode automatically enables the Dew Point Spread, Temperature, and Visibility extra rows. It then highlights cells where the dew point and temperature are very close together (small spread), which signals a high likelihood of fog or low visibility. The closer the spread is to zero, the stronger the highlight — helping you spot fog risk at a glance.',
+    target: '#fog-mode',
+    requireVisible: '.bottom-settings-inner',
+  },
+  {
+    title: 'Best Hours',
+    text: 'Best Hours filters the forecast to only show hours where the surface wind speed is at or below your chosen threshold (default 15 mph). This makes it easy to find the calmest windows for flying. Adjust the threshold number to match your comfort level — lower values show only the lightest wind hours.',
+    target: '#best-hours',
+    requireVisible: '.bottom-settings-inner',
+  },
+  {
     title: 'Extra Rows',
-    text: 'Add supplementary data rows like Gusts, CAPE, Precip, Temp, Humidity, Dew Point Spread, Visibility, and Cloud layers beneath each model table.',
+    text: 'Add supplementary data beneath each model table: Gusts, CAPE (convective energy), Lifted Index (stability), Precipitation %, Precipitation inches, Temperature, Humidity, Dew Point Spread, Visibility, and Cloud cover at low/mid/high levels. Toggle each one individually.',
     target: '#section-extra-rows',
     requireVisible: '.bottom-settings-inner',
   },
   {
-    title: 'Models & Forecast',
-    text: 'Enable or disable individual weather models (HRRR, ECMWF, GFS, ICON, NAM) and adjust how many forecast days each model shows.',
+    title: 'Models & Forecast Days',
+    text: 'Enable or disable individual weather models: HRRR (high-res, short-range), ECMWF (global, medium-range), GFS (global, extended), ICON (European global), and NAM (North American mesoscale). Use the slider next to each model to control how many forecast days to load.',
     target: '#section-models',
     requireVisible: '.bottom-settings-inner',
   },
   {
     title: 'Layout',
-    text: 'Fine-tune cell sizes, fonts, arrow style, borders, and spacing to fit your screen perfectly.',
+    text: 'Open the Layout popup to fine-tune every visual aspect: cell width, row height, font sizes, arrow style and size, table spacing, borders, and more. Great for fitting the tables perfectly to your screen size.',
     target: '#open-layout-popup',
     requireVisible: '.bottom-settings-inner',
   },
   {
     title: 'Wind Colors',
-    text: 'Customize the wind speed thresholds that control the blue → green → red color gradient in the tables.',
+    text: 'Customize the three wind speed thresholds that control the color gradient in the tables. Blue means calm winds (at or below the first number), green is moderate, and red means strong. Adjust these to match your personal flying limits.',
     target: '#section-wind-colors',
     requireVisible: '.bottom-settings-inner',
   },
   {
+    title: 'Ensemble View',
+    text: 'Now let\'s look at the Ensemble view! Switching to it automatically...',
+    target: '#view-dropdown',
+    action: 'switchToEnsemble',
+  },
+  {
+    title: 'Reading Ensemble Data',
+    text: 'Ensemble models (GEFS and ECMWF Ensemble) run the forecast many times with slightly different starting conditions. The number in each cell is the average across all those runs. The cell\'s background color shows the spread (standard deviation) between runs — green means the models mostly agree (high confidence), while yellow to red means they disagree (low confidence, more uncertainty). This helps you judge not just what the forecast says, but how much you can trust it.',
+    target: '.ensemble-section:not(.hidden) .table-container',
+  },
+  {
     title: 'Guide Button',
-    text: 'You can replay this guide anytime by tapping the Guide button in the header.',
+    text: 'You can replay this guide anytime by tapping the Guide button up here. Happy flying!',
     target: '#guide-btn',
+    action: 'switchToWind',
   },
   {
     title: "You're all set!",
-    text: 'Start by searching for a location or tapping GPS. Enjoy forecasting!',
+    text: 'Start by searching for a location or tapping GPS. Scroll through the tables to explore the forecast. Remember: two fingers to scroll up/down between models, one finger to scroll left/right through hours. Enjoy!',
     target: null,
   },
 ];
@@ -90,6 +123,7 @@ const STEPS = [
 let currentStep = 0;
 let overlayEl = null;
 let onComplete = null;
+let actionHandler = null;
 
 function createOverlay() {
   const el = document.createElement('div');
@@ -133,9 +167,13 @@ function ensureVisible(step) {
   const el = document.querySelector(step.requireVisible);
   if (el && el.classList.contains('hidden')) {
     el.classList.remove('hidden');
-    // Track that we opened it so we can decide whether to close later
     el.dataset.guideOpened = 'true';
   }
+}
+
+function executeAction(step) {
+  if (!step.action || !actionHandler) return;
+  actionHandler(step.action);
 }
 
 function goToStep(idx) {
@@ -145,41 +183,45 @@ function goToStep(idx) {
   const highlight = overlayEl.querySelector('.guide-highlight');
   const tooltip = overlayEl.querySelector('.guide-tooltip');
 
+  // Execute any action for this step (e.g. switch views)
+  executeAction(step);
+
   // Ensure required panels are visible
   ensureVisible(step);
 
-  // Position highlight
-  if (step.target) {
-    const targetEl = document.querySelector(step.target);
-    if (targetEl) {
-      const rect = targetEl.getBoundingClientRect();
-      const pad = 4;
-      highlight.style.display = 'block';
-      highlight.style.left = `${rect.left - pad}px`;
-      highlight.style.top = `${rect.top - pad}px`;
-      highlight.style.width = `${rect.width + pad * 2}px`;
-      highlight.style.height = `${rect.height + pad * 2}px`;
-
-      // Position tooltip near the target
-      positionTooltip(tooltip, rect);
+  // Small delay to let DOM update after actions
+  requestAnimationFrame(() => {
+    // Position highlight
+    if (step.target) {
+      const targetEl = document.querySelector(step.target);
+      if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        const pad = 4;
+        highlight.style.display = 'block';
+        highlight.style.left = `${rect.left - pad}px`;
+        highlight.style.top = `${rect.top - pad}px`;
+        highlight.style.width = `${rect.width + pad * 2}px`;
+        highlight.style.height = `${rect.height + pad * 2}px`;
+        positionTooltip(tooltip, rect);
+      } else {
+        highlight.style.display = 'none';
+        centerTooltip(tooltip);
+      }
     } else {
       highlight.style.display = 'none';
       centerTooltip(tooltip);
     }
-  } else {
-    highlight.style.display = 'none';
-    centerTooltip(tooltip);
-  }
 
-  // Update content
-  overlayEl.querySelector('.guide-title').textContent = step.title;
-  overlayEl.querySelector('.guide-text').textContent = step.text;
-  overlayEl.querySelector('.guide-progress').textContent = `${currentStep + 1} / ${STEPS.length}`;
+    // Update content
+    overlayEl.querySelector('.guide-title').textContent = step.title;
+    overlayEl.querySelector('.guide-text').textContent = step.text;
+    overlayEl.querySelector('.guide-progress').textContent = `${currentStep + 1} / ${STEPS.length}`;
 
-  // Button visibility
-  overlayEl.querySelector('.guide-prev').style.display = currentStep > 0 ? '' : 'none';
-  const nextBtn = overlayEl.querySelector('.guide-next');
-  nextBtn.textContent = currentStep >= STEPS.length - 1 ? 'Done' : 'Next';
+    // Button visibility
+    overlayEl.querySelector('.guide-prev').style.display = currentStep > 0 ? '' : 'none';
+    const nextBtn = overlayEl.querySelector('.guide-next');
+    nextBtn.textContent = currentStep >= STEPS.length - 1 ? 'Done' : 'Next';
+  });
 }
 
 function positionTooltip(tooltip, targetRect) {
@@ -224,6 +266,8 @@ function centerTooltip(tooltip) {
 }
 
 function endGuide() {
+  // Switch back to wind view if we changed it
+  if (actionHandler) actionHandler('switchToWind');
   if (overlayEl) {
     overlayEl.remove();
     overlayEl = null;
@@ -232,7 +276,8 @@ function endGuide() {
   if (onComplete) onComplete();
 }
 
-export function startGuide(completionCallback) {
+export function startGuide(onAction, completionCallback) {
+  actionHandler = onAction || null;
   onComplete = completionCallback || null;
   currentStep = 0;
   if (overlayEl) overlayEl.remove();

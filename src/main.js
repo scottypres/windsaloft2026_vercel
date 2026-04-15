@@ -677,14 +677,35 @@ function init() {
     }
   }
 
+  // Guide action handler — lets the guide switch views, etc.
+  const VIEW_LABELS = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble' };
+
+  function guideAction(action) {
+    if (action === 'switchToEnsemble') {
+      prefs.view = 'ensemble';
+      savePrefs(prefs);
+      if (!ensembleData && prefs.lastLocation) {
+        loadEnsemble(prefs.lastLocation.lat, prefs.lastLocation.lon).then(() => rerender());
+      } else {
+        rerender();
+      }
+      restoreControlState(prefs);
+    } else if (action === 'switchToWind') {
+      prefs.view = 'wind';
+      savePrefs(prefs);
+      rerender();
+      restoreControlState(prefs);
+    }
+  }
+
   // Guide button
   document.getElementById('guide-btn').addEventListener('click', () => {
-    startGuide();
+    startGuide(guideAction);
   });
 
   // Auto-start guide on first visit
   if (!hasSeenGuide()) {
-    startGuide();
+    startGuide(guideAction);
   }
 }
 
