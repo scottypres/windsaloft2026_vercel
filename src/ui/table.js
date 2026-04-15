@@ -149,7 +149,8 @@ export function renderTable(container, data, options = {}) {
     const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble);
     const fogLabels = new Set(['DP Spread', 'Temp °F', 'Vis (mi)']);
     for (const row of suppRows) {
-      html.push('<tr class="supp-row">');
+      const promoted = row.label === 'Gusts' ? ' supp-row-promoted' : '';
+      html.push(`<tr class="supp-row${promoted}">`);
       html.push(`<td class="alt-label supp-label">${row.label}</td>`);
       for (let j = 0; j < hourIndices.length; j++) {
         const cell = row.cells[j];
