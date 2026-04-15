@@ -1,10 +1,11 @@
-import { fetchGFS, fetchICON } from './api/weather.js';
-import { transformWeatherData } from './data/transform.js';
+import { fetchModel, fetchEnsemble } from './api/weather.js';
+import { transformWeatherData, transformEnsembleData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
 import { enableMomentumScroll } from './ui/momentum.js';
 import { windColor } from './data/colors.js';
+import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
 import {
   loadPrefs,
   savePrefs,
@@ -15,13 +16,22 @@ import {
 import './styles/main.css';
 
 let prefs = loadPrefs();
-let gfsData = null;
-let iconData = null;
+const modelData = {}; // { hrrr: transformedData, ecmwf: ..., ... }
+let ensembleData = null; // { gefs: transformedData, ecmwf_ens: transformedData }
 let locationUI = null;
+
+// Map model IDs to their table container DOM IDs
+const MODEL_CONTAINER_IDS = {
+  hrrr: 'hrrr-table',
+  ecmwf: 'ecmwf-table',
+  nam: 'nam-table',
+  gfs_seamless: 'gfs-seamless-table',
+  icon: 'icon-table',
+};
 
 function getTableOptions() {
   return {
-    view: prefs.view,
+    view: prefs.view === 'ensemble' ? 'wind' : prefs.view,
     windThresholds: prefs.windThresholds,
     showDaylightOnly: prefs.showDaylightOnly,
     hideHighAltitude: prefs.hideHighAltitude,
@@ -29,36 +39,47 @@ function getTableOptions() {
     showFogMode: prefs.showFogMode,
     bestHoursThreshold: prefs.bestHoursThreshold,
     supplementaryRows: prefs.supplementaryRows,
+    isEnsemble: prefs.view === 'ensemble',
   };
 }
 
-// Synchronized scrolling between GFS and ICON tables
+// N-way synchronized scrolling between all visible table containers
 let syncEnabled = false;
 let syncing = false;
 
 function setupScrollSync() {
-  const gfs = document.getElementById('gfs-table');
-  const icon = document.getElementById('icon-table');
-
-  gfs._scrollHandler && gfs.removeEventListener('scroll', gfs._scrollHandler);
-  icon._scrollHandler && icon.removeEventListener('scroll', icon._scrollHandler);
+  // Remove old handlers
+  document.querySelectorAll('.table-container').forEach((el) => {
+    if (el._scrollHandler) {
+      el.removeEventListener('scroll', el._scrollHandler);
+      el._scrollHandler = null;
+    }
+  });
 
   if (!syncEnabled) return;
 
-  gfs._scrollHandler = () => {
-    if (syncing) return;
-    syncing = true;
-    icon.scrollLeft = gfs.scrollLeft;
-    syncing = false;
-  };
-  icon._scrollHandler = () => {
-    if (syncing) return;
-    syncing = true;
-    gfs.scrollLeft = icon.scrollLeft;
-    syncing = false;
-  };
-  gfs.addEventListener('scroll', gfs._scrollHandler);
-  icon.addEventListener('scroll', icon._scrollHandler);
+  // Collect all visible, non-empty containers
+  const containers = [];
+  const sections = document.querySelectorAll('.table-section:not(.hidden)');
+  sections.forEach((section) => {
+    const container = section.querySelector('.table-container');
+    if (container && container.innerHTML.trim()) {
+      containers.push(container);
+    }
+  });
+
+  containers.forEach((container) => {
+    container._scrollHandler = () => {
+      if (syncing) return;
+      syncing = true;
+      const left = container.scrollLeft;
+      containers.forEach((other) => {
+        if (other !== container) other.scrollLeft = left;
+      });
+      syncing = false;
+    };
+    container.addEventListener('scroll', container._scrollHandler);
+  });
 }
 
 function updateTableSectionVisibility() {
@@ -68,10 +89,22 @@ function updateTableSectionVisibility() {
   });
 }
 
-function rerender() {
-  const gfsContainer = document.getElementById('gfs-table');
-  const iconContainer = document.getElementById('icon-table');
+function setNormalModelVisibility(visible) {
+  for (const id of MODEL_ORDER) {
+    const section = document.querySelector(`.table-section[data-model="${id}"]`);
+    if (section) {
+      section.classList.toggle('hidden', !visible || !prefs.modelToggles[id]);
+    }
+  }
+}
 
+function setEnsembleVisibility(visible) {
+  document.querySelectorAll('.ensemble-section').forEach((section) => {
+    section.classList.toggle('hidden', !visible);
+  });
+}
+
+function rerender() {
   if (prefs.showAllLocations) {
     renderAllLocations();
     return;
@@ -80,46 +113,122 @@ function rerender() {
   document.querySelector('.tables-wrapper').classList.remove('all-locations-mode');
 
   syncEnabled = prefs.bestHoursThreshold == null;
+  const isEnsembleView = prefs.view === 'ensemble';
 
-  if (gfsData) {
-    renderTable(gfsContainer, gfsData, getTableOptions());
+  // Toggle visibility
+  setNormalModelVisibility(!isEnsembleView);
+  setEnsembleVisibility(isEnsembleView);
+
+  if (isEnsembleView) {
+    // Render ensemble tables
+    const gefsContainer = document.getElementById('gefs-table');
+    const ecmwfEnsContainer = document.getElementById('ecmwf-ens-table');
+
+    if (ensembleData?.gefs) {
+      renderTable(gefsContainer, ensembleData.gefs, getTableOptions());
+      enableMomentumScroll(gefsContainer);
+    } else {
+      gefsContainer.innerHTML = '<div class="no-data">Click a location to load ensemble data.</div>';
+    }
+    if (ensembleData?.ecmwf_ens) {
+      renderTable(ecmwfEnsContainer, ensembleData.ecmwf_ens, getTableOptions());
+      enableMomentumScroll(ecmwfEnsContainer);
+    } else {
+      ecmwfEnsContainer.innerHTML = '';
+    }
   } else {
-    gfsContainer.innerHTML = '';
-  }
-  if (iconData) {
-    renderTable(iconContainer, iconData, getTableOptions());
-  } else {
-    iconContainer.innerHTML = '';
+    // Render normal model tables
+    const opts = getTableOptions();
+    for (const id of MODEL_ORDER) {
+      const container = document.getElementById(MODEL_CONTAINER_IDS[id]);
+      const section = document.querySelector(`.table-section[data-model="${id}"]`);
+
+      if (!prefs.modelToggles[id]) {
+        if (section) section.classList.add('hidden');
+        if (container) container.innerHTML = '';
+        continue;
+      }
+
+      if (modelData[id]) {
+        renderTable(container, modelData[id], opts);
+      } else {
+        container.innerHTML = '';
+      }
+    }
   }
 
   updateTableSectionVisibility();
   setupScrollSync();
-  enableMomentumScroll(gfsContainer);
-  enableMomentumScroll(iconContainer);
+
+  // Enable momentum scroll on all visible containers
+  document.querySelectorAll('.table-section:not(.hidden) .table-container').forEach((el) => {
+    enableMomentumScroll(el);
+  });
 }
 
 async function loadWeather(lat, lon) {
-  const gfsContainer = document.getElementById('gfs-table');
-  const iconContainer = document.getElementById('icon-table');
   const loading = document.getElementById('loading');
 
-  gfsContainer.innerHTML = '';
-  iconContainer.innerHTML = '';
+  // Clear all containers
+  for (const id of MODEL_ORDER) {
+    const container = document.getElementById(MODEL_CONTAINER_IDS[id]);
+    if (container) container.innerHTML = '';
+  }
   loading.classList.remove('hidden');
 
   try {
-    const [gfsRaw, iconRaw] = await Promise.all([
-      fetchGFS(lat, lon, prefs.gfsDays),
-      fetchICON(lat, lon, prefs.iconDays),
-    ]);
+    // Fetch all enabled models in parallel
+    const enabledModels = MODEL_ORDER.filter((id) => prefs.modelToggles[id]);
+    const promises = enabledModels.map((id) =>
+      fetchModel(id, lat, lon, prefs.modelDays[id]).catch((err) => {
+        console.error(`Failed to fetch ${id}:`, err);
+        return null;
+      })
+    );
 
-    gfsData = transformWeatherData(gfsRaw, 'gfs');
-    iconData = transformWeatherData(iconRaw, 'icon');
+    const results = await Promise.all(promises);
+    enabledModels.forEach((id, i) => {
+      if (results[i]) {
+        modelData[id] = transformWeatherData(results[i], id);
+      } else {
+        modelData[id] = null;
+      }
+    });
+
+    // If ensemble view is active, also fetch ensemble data
+    if (prefs.view === 'ensemble') {
+      await loadEnsemble(lat, lon);
+    }
 
     rerender();
   } catch (err) {
-    gfsContainer.innerHTML = `<div class="error">Failed to load weather data: ${err.message}</div>`;
+    const firstContainer = document.getElementById(MODEL_CONTAINER_IDS[MODEL_ORDER[0]]);
+    if (firstContainer) {
+      firstContainer.innerHTML = `<div class="error">Failed to load weather data: ${err.message}</div>`;
+    }
     console.error(err);
+  } finally {
+    loading.classList.add('hidden');
+  }
+}
+
+async function loadEnsemble(lat, lon) {
+  const loading = document.getElementById('loading');
+  loading.classList.remove('hidden');
+
+  try {
+    const raw = await fetchEnsemble(lat, lon, prefs.ensembleDays || 14);
+    ensembleData = {
+      gefs: transformEnsembleData(raw, 'gefs'),
+      ecmwf_ens: transformEnsembleData(raw, 'ecmwf_ens'),
+    };
+  } catch (err) {
+    console.error('Failed to fetch ensemble data:', err);
+    ensembleData = null;
+    const container = document.getElementById('gefs-table');
+    if (container) {
+      container.innerHTML = `<div class="error">Failed to load ensemble data: ${err.message}</div>`;
+    }
   } finally {
     loading.classList.add('hidden');
   }
@@ -143,26 +252,36 @@ function setupAllLocationsScrollSync() {
 }
 
 async function renderAllLocations() {
-  const gfsContainer = document.getElementById('gfs-table');
-  const iconContainer = document.getElementById('icon-table');
+  const firstContainer = document.getElementById(MODEL_CONTAINER_IDS[MODEL_ORDER[0]]);
   const loading = document.getElementById('loading');
   const wrapper = document.querySelector('.tables-wrapper');
 
-  iconContainer.innerHTML = '';
+  // Hide all model sections except the first one (used for all-locations rendering)
+  MODEL_ORDER.slice(1).forEach((id) => {
+    const container = document.getElementById(MODEL_CONTAINER_IDS[id]);
+    if (container) container.innerHTML = '';
+    const section = document.querySelector(`.table-section[data-model="${id}"]`);
+    if (section) section.classList.add('hidden');
+  });
+  setEnsembleVisibility(false);
+
   wrapper.classList.add('all-locations-mode');
 
   if (prefs.savedLocations.length === 0) {
-    gfsContainer.innerHTML = '<div class="no-data">No saved locations to display.</div>';
+    firstContainer.innerHTML = '<div class="no-data">No saved locations to display.</div>';
     return;
   }
 
   loading.classList.remove('hidden');
-  gfsContainer.innerHTML = '';
+  firstContainer.innerHTML = '';
+
+  // Use the first enabled model for all-locations view
+  const activeModel = MODEL_ORDER.find((id) => prefs.modelToggles[id]) || MODEL_ORDER[0];
 
   try {
     for (const loc of prefs.savedLocations) {
-      const raw = await fetchGFS(loc.lat, loc.lon, prefs.gfsDays);
-      const data = transformWeatherData(raw, 'gfs');
+      const raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
+      const data = transformWeatherData(raw, activeModel);
 
       const item = document.createElement('div');
       item.className = 'all-locations-item';
@@ -174,14 +293,14 @@ async function renderAllLocations() {
       const tableDiv = document.createElement('div');
       tableDiv.className = 'table-container';
       item.appendChild(tableDiv);
-      gfsContainer.appendChild(item);
+      firstContainer.appendChild(item);
 
       renderTable(tableDiv, data, getTableOptions());
       enableMomentumScroll(tableDiv);
     }
     setupAllLocationsScrollSync();
   } catch (err) {
-    gfsContainer.innerHTML += `<div class="error">Error: ${err.message}</div>`;
+    firstContainer.innerHTML += `<div class="error">Error: ${err.message}</div>`;
   } finally {
     loading.classList.add('hidden');
     updateTableSectionVisibility();
@@ -323,13 +442,11 @@ function initWindColorControls() {
     strong: parseInt(strongInput.value) || 20,
   });
 
-  // Live preview as user types
   const onInput = () => {
     prefs.windThresholds = readThresholds();
     updateWindGradient();
   };
 
-  // Save + rerender on commit
   const onChange = () => {
     prefs.windThresholds = readThresholds();
     savePrefs(prefs);
@@ -371,7 +488,6 @@ function init() {
   initSettingsToggle();
   initBottomSettings();
 
-  // Init location UI
   locationUI = initLocationUI(document.getElementById('location-panel'), {
     onLocationSelect(loc) {
       prefs.lastLocation = loc;
@@ -391,11 +507,15 @@ function init() {
 
   locationUI.renderSavedLocations(prefs.savedLocations);
 
-  // Init controls (view toggles + filter/supp/forecast wiring)
   initControls({
     onViewChange(view) {
       prefs.view = view;
       savePrefs(prefs);
+      // If switching to ensemble view, fetch ensemble data if we have a location
+      if (view === 'ensemble' && !ensembleData && prefs.lastLocation) {
+        loadEnsemble(prefs.lastLocation.lat, prefs.lastLocation.lon).then(() => rerender());
+        return;
+      }
       rerender();
     },
     onToggle(key, value) {
@@ -408,12 +528,31 @@ function init() {
       savePrefs(prefs);
       rerender();
     },
-    onForecastDaysChange(model, days) {
-      if (model === 'gfs') prefs.gfsDays = days;
-      else prefs.iconDays = days;
+    onModelToggle(modelId, enabled) {
+      prefs.modelToggles[modelId] = enabled;
       savePrefs(prefs);
-      if (prefs.lastLocation) {
-        loadWeather(prefs.lastLocation.lat, prefs.lastLocation.lon);
+      // If enabling a model that hasn't been fetched, fetch it
+      if (enabled && !modelData[modelId] && prefs.lastLocation) {
+        fetchModel(modelId, prefs.lastLocation.lat, prefs.lastLocation.lon, prefs.modelDays[modelId])
+          .then((raw) => {
+            modelData[modelId] = transformWeatherData(raw, modelId);
+            rerender();
+          })
+          .catch((err) => console.error(`Failed to fetch ${modelId}:`, err));
+        return;
+      }
+      rerender();
+    },
+    onModelDaysChange(modelId, days) {
+      prefs.modelDays[modelId] = days;
+      savePrefs(prefs);
+      if (prefs.lastLocation && prefs.modelToggles[modelId]) {
+        fetchModel(modelId, prefs.lastLocation.lat, prefs.lastLocation.lon, days)
+          .then((raw) => {
+            modelData[modelId] = transformWeatherData(raw, modelId);
+            rerender();
+          })
+          .catch((err) => console.error(`Failed to fetch ${modelId}:`, err));
       }
     },
     onShowAllLocations() {
@@ -431,10 +570,8 @@ function init() {
     },
   });
 
-  // Restore control state
   restoreControlState(prefs);
 
-  // Auto-load last location
   if (prefs.lastLocation) {
     locationUI.setCurrentLocation(prefs.lastLocation);
     if (prefs.showAllLocations) {

@@ -134,6 +134,30 @@ export function visibilityColor(miles) {
   return rgb(lerp([70, 200, 100], [220, 50, 50], t));
 }
 
+// Blend a color toward neutral gray based on confidence factor.
+// factor: 1.0 = full original color, 0.0 = fully gray.
+// Used for ensemble spread overlay — high spread = low confidence = grayed out.
+export function blendTowardGray(color, factor) {
+  const match = color.match(/\d+/g);
+  if (!match) return color;
+  const [r, g, b] = match.map(Number);
+  const gray = 180;
+  const f = Math.max(0, Math.min(1, factor));
+  const nr = Math.round(gray + (r - gray) * f);
+  const ng = Math.round(gray + (g - gray) * f);
+  const nb = Math.round(gray + (b - gray) * f);
+  return `rgb(${nr},${ng},${nb})`;
+}
+
+// Compute confidence factor from ensemble spread.
+// spread < 2 mph = full confidence (1.0), spread > 10 mph = low confidence (0.15).
+export function spreadConfidence(spread) {
+  if (spread == null) return 1;
+  if (spread <= 2) return 1;
+  if (spread >= 10) return 0.15;
+  return 1 - ((spread - 2) / 8) * 0.85;
+}
+
 // Get contrasting text color for a background
 export function textColorFor(bgColor) {
   // Parse rgb values
