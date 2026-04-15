@@ -5,6 +5,7 @@ import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
 import { enableMomentumScroll } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
+import { startGuide, hasSeenGuide } from './ui/guide.js';
 import { windColor } from './data/colors.js';
 import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
 import {
@@ -564,11 +565,29 @@ function init() {
   initSettingsToggle();
   initBottomSettings();
 
+  const locationBar = document.getElementById('current-location-bar');
+
+  function updateLocationBar(loc) {
+    if (loc) locationBar.textContent = loc.shortName;
+    else locationBar.textContent = '';
+  }
+
+  function hideLocationsPanel() {
+    prefs.settingsVisible = false;
+    savePrefs(prefs);
+    const topBar = document.getElementById('top-bar');
+    const locBtn = document.getElementById('toggle-locations');
+    topBar.classList.add('hidden');
+    locBtn.textContent = 'Locations';
+  }
+
   locationUI = initLocationUI(document.getElementById('location-panel'), {
     onLocationSelect(loc) {
       prefs.lastLocation = loc;
       prefs.showAllLocations = false;
       savePrefs(prefs);
+      updateLocationBar(loc);
+      hideLocationsPanel();
       loadWeather(loc.lat, loc.lon);
     },
     onSaveLocation(loc) {
@@ -650,11 +669,22 @@ function init() {
 
   if (prefs.lastLocation) {
     locationUI.setCurrentLocation(prefs.lastLocation);
+    updateLocationBar(prefs.lastLocation);
     if (prefs.showAllLocations) {
       renderAllLocations();
     } else {
       loadWeather(prefs.lastLocation.lat, prefs.lastLocation.lon);
     }
+  }
+
+  // Guide button
+  document.getElementById('guide-btn').addEventListener('click', () => {
+    startGuide();
+  });
+
+  // Auto-start guide on first visit
+  if (!hasSeenGuide()) {
+    startGuide();
   }
 }
 
