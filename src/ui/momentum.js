@@ -1,6 +1,7 @@
-// Mouse drag scrolling with multiplier (desktop only).
-// Touch scrolling is handled natively by the browser for maximum smoothness.
+// Amplified drag scrolling - drags scroll faster than 1:1
 const DRAG_MULTIPLIER = 1.5;
+// Minimum pixel movement before locking to an axis
+const AXIS_LOCK_THRESHOLD = 6;
 
 export function enableMomentumScroll(container) {
   let isDragging = false;
@@ -32,20 +33,51 @@ export function enableMomentumScroll(container) {
     container.style.userSelect = '';
   });
 
-  // Multi-touch lock: prevent horizontal drift during two-finger vertical scrolls
+  // Touch drag — axis-locked for single finger, scroll-locked for multi-touch
+  let touchStartX, touchStartY, touchScrollLeft;
+  let touchAxis = null;
   let multiTouchLock = null;
 
   container.addEventListener('touchstart', (e) => {
     if (e.touches.length >= 2) {
       multiTouchLock = container.scrollLeft;
+      touchAxis = null;
+      return;
+    }
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchScrollLeft = container.scrollLeft;
+      touchAxis = null;
+      multiTouchLock = null;
     }
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
     if (e.touches.length >= 2 && multiTouchLock !== null) {
       container.scrollLeft = multiTouchLock;
+      return;
     }
-  }, { passive: true });
+
+    if (e.touches.length !== 1) return;
+
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+
+    if (!touchAxis) {
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      if (absDx > AXIS_LOCK_THRESHOLD || absDy > AXIS_LOCK_THRESHOLD) {
+        touchAxis = absDx > absDy ? 'x' : 'y';
+      }
+      if (!touchAxis) return;
+    }
+
+    if (touchAxis === 'x') {
+      container.scrollLeft = touchScrollLeft - dx * DRAG_MULTIPLIER;
+      e.preventDefault();
+    }
+  }, { passive: false });
 
   container.addEventListener('touchend', (e) => {
     if (e.touches.length === 0 && multiTouchLock !== null) {
@@ -54,6 +86,8 @@ export function enableMomentumScroll(container) {
         container.scrollLeft = multiTouchLock;
         multiTouchLock = null;
       });
+      return;
     }
+    touchAxis = null;
   }, { passive: true });
 }
