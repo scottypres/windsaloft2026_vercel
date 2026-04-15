@@ -146,7 +146,7 @@ export function addSavedLocation(prefs, location) {
   );
   if (exists) return prefs;
 
-  prefs.savedLocations = [location, ...prefs.savedLocations].slice(0, 10);
+  prefs.savedLocations = [location, ...prefs.savedLocations].slice(0, 6);
   savePrefs(prefs);
   return prefs;
 }

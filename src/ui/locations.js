@@ -1,6 +1,6 @@
 import { searchLocations, reverseGeocode } from '../api/geocoding.js';
 
-const MAX_SAVED = 10;
+const MAX_SAVED = 6;
 
 export function initLocationUI(container, callbacks) {
   container.innerHTML = `
