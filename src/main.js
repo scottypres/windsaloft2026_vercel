@@ -156,6 +156,13 @@ function rerender() {
         continue;
       }
 
+      // Hide models with no cloud altitude data in clouds view
+      if (opts.view === 'clouds' && modelData[id] && (!modelData[id].cloudAltitudes || modelData[id].cloudAltitudes.length === 0)) {
+        if (section) section.classList.add('hidden');
+        if (container) container.innerHTML = '';
+        continue;
+      }
+
       if (modelData[id]) {
         renderTable(container, modelData[id], opts);
       } else {
