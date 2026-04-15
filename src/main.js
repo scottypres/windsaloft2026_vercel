@@ -353,10 +353,10 @@ function initBottomSettings() {
       body.classList.toggle('hidden');
       header.classList.toggle('collapsed');
 
-      // Toggle layout preview opacity when Layout section is open
+      // Make settings panel semi-transparent when Layout section is open
       if (header.dataset.section === 'layout') {
         const isOpen = !body.classList.contains('hidden');
-        document.querySelector('.tables-wrapper').classList.toggle('layout-preview', isOpen);
+        inner.classList.toggle('layout-active', isOpen);
       }
     });
   });

@@ -602,11 +602,6 @@ body {
   color: var(--text);
 }
 
-/* Layout preview: reduce cell opacity so layout changes are easier to see */
-.layout-preview .cell {
-  opacity: 0.3;
-}
-
 /* === No Data / Error === */
 .no-data, .error {
   padding: 2rem;
@@ -732,6 +727,11 @@ body {
   padding: 0.5rem 0.75rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  transition: opacity 0.2s;
+}
+
+.bottom-settings-inner.layout-active {
+  opacity: 0.2;
   gap: 0.4rem;
   max-height: 50vh;
   overflow-y: auto;
