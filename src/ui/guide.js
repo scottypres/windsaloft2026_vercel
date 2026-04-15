@@ -63,14 +63,14 @@ const STEPS = [
   {
     title: 'Fog Mode',
     text: 'Fog Mode automatically enables the Dew Point Spread, Temperature, and Visibility extra rows. It then highlights cells where the dew point and temperature are very close together (small spread), which signals a high likelihood of fog or low visibility. The closer the spread is to zero, the stronger the highlight — helping you spot fog risk at a glance. Note: accuracy is just OK — use it as one tool among many, not a definitive fog forecast.',
-    target: '#fog-mode',
+    target: '#fog-mode-label',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-filters .section-body',
   },
   {
     title: 'Best Hours',
     text: 'Best Hours filters the forecast to only show hours where the surface wind speed is at or below your chosen threshold (default 15 mph). This makes it easy to find the calmest windows for flying. Adjust the threshold number to match your comfort level — lower values show only the lightest wind hours.',
-    target: '#best-hours',
+    target: '#best-hours-label',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-filters .section-body',
   },
