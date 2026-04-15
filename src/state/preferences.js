@@ -107,13 +107,26 @@ export function savePrefs(prefs) {
   }
 }
 
-export function resetPrefs() {
+export function resetPrefs(preserveLocations = true) {
+  const defaults = freshDefaults();
+  if (preserveLocations) {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        defaults.savedLocations = saved.savedLocations || [];
+        defaults.lastLocation = saved.lastLocation || DEFAULTS.lastLocation;
+      }
+    } catch {
+      // ignore
+    }
+  }
   try {
-    localStorage.removeItem(PREFS_KEY);
+    localStorage.setItem(PREFS_KEY, JSON.stringify(defaults));
   } catch {
     // ignore
   }
-  return freshDefaults();
+  return defaults;
 }
 
 export function addSavedLocation(prefs, location) {
