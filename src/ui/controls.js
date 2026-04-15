@@ -84,9 +84,11 @@ export function initControls(callbacks) {
     callbacks.onShowAllLocations();
   });
 
-  // Reset
+  // Reset (with confirmation)
   document.getElementById('reset-defaults').addEventListener('click', () => {
-    callbacks.onReset();
+    if (confirm('Reset all settings to defaults? Your saved locations will be kept.')) {
+      callbacks.onReset();
+    }
   });
 }
 
