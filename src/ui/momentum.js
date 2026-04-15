@@ -55,6 +55,17 @@ export function enableMomentumScroll(container) {
 
   container.addEventListener('touchmove', (e) => {
     if (e.touches.length !== 1) return;
+    // If returning to single finger after multi-touch, clear the lock
+    // and reset the reference point so scrolling resumes cleanly
+    if (multiTouchActive) {
+      multiTouchActive = false;
+      lockedScrollLeft = null;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchScrollLeft = container.scrollLeft;
+      touchScrollTop = container.scrollTop;
+      return;
+    }
     const dx = (e.touches[0].clientX - touchStartX) * DRAG_MULTIPLIER;
     const dy = (e.touches[0].clientY - touchStartY) * DRAG_MULTIPLIER;
     container.scrollLeft = touchScrollLeft - dx;
@@ -75,6 +86,11 @@ export function enableMomentumScroll(container) {
         lockedScrollLeft = null;
       }, 150);
     }
+  }, { passive: true });
+
+  container.addEventListener('touchcancel', () => {
+    multiTouchActive = false;
+    lockedScrollLeft = null;
   }, { passive: true });
 
   container.addEventListener('scroll', () => {
