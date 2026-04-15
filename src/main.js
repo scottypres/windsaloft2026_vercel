@@ -350,15 +350,25 @@ function initBottomSettings() {
   panel.querySelectorAll('.section-header').forEach((header) => {
     header.addEventListener('click', () => {
       const body = header.nextElementSibling;
-      body.classList.toggle('hidden');
-      header.classList.toggle('collapsed');
-
-      // Make settings panel semi-transparent when Layout section is open
-      if (header.dataset.section === 'layout') {
-        const isOpen = !body.classList.contains('hidden');
-        inner.classList.toggle('layout-active', isOpen);
+      if (body) {
+        body.classList.toggle('hidden');
+        header.classList.toggle('collapsed');
       }
     });
+  });
+
+  // Layout popup open/close
+  const layoutPopup = document.getElementById('layout-popup');
+  document.getElementById('open-layout-popup').addEventListener('click', () => {
+    layoutPopup.classList.remove('hidden');
+  });
+  document.getElementById('layout-popup-done').addEventListener('click', () => {
+    layoutPopup.classList.add('hidden');
+    savePrefs(prefs);
+  });
+  document.querySelector('.layout-popup-backdrop').addEventListener('click', () => {
+    layoutPopup.classList.add('hidden');
+    savePrefs(prefs);
   });
 
   // Layout sliders

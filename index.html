@@ -126,60 +126,9 @@
         </div>
       </div>
 
-      <!-- Layout Section -->
-      <div class="settings-section" id="section-layout">
-        <button class="section-header" data-section="layout">Layout</button>
-        <div class="section-body">
-          <label class="inline-label">Col W
-            <input type="range" id="layout-cell-width" min="8" max="70" value="34" class="range-input">
-            <span id="layout-cell-width-val">34</span>
-          </label>
-          <label class="inline-label">Row H
-            <input type="range" id="layout-cell-height" min="8" max="50" value="28" class="range-input">
-            <span id="layout-cell-height-val">28</span>
-          </label>
-          <label class="inline-label">Hdr H
-            <input type="range" id="layout-header-height" min="10" max="70" value="42" class="range-input">
-            <span id="layout-header-height-val">42</span>
-          </label>
-          <label class="inline-label">Label W
-            <input type="range" id="layout-alt-width" min="10" max="100" value="60" class="range-input">
-            <span id="layout-alt-width-val">60</span>
-          </label>
-          <label class="inline-label">Font
-            <input type="range" id="layout-font-size" min="4" max="16" value="11" class="range-input">
-            <span id="layout-font-size-val">11</span>
-          </label>
-          <label class="inline-label">Hdr Font
-            <input type="range" id="layout-header-font-size" min="4" max="14" value="9" class="range-input">
-            <span id="layout-header-font-size-val">9</span>
-          </label>
-          <label class="inline-label">Pad
-            <input type="range" id="layout-cell-pad" min="0" max="6" value="2" class="range-input">
-            <span id="layout-cell-pad-val">2</span>
-          </label>
-          <label class="inline-label">Extra Font
-            <input type="range" id="layout-supp-font-size" min="4" max="14" value="9" class="range-input">
-            <span id="layout-supp-font-size-val">9</span>
-          </label>
-          <label class="inline-label">Arrow
-            <input type="range" id="layout-arrow-size" min="0" max="18" value="10" class="range-input">
-            <span id="layout-arrow-size-val">10</span>
-          </label>
-          <label class="inline-label">Gap
-            <input type="range" id="layout-table-gap" min="0" max="24" value="8" class="range-input">
-            <span id="layout-table-gap-val">8</span>
-          </label>
-          <label class="inline-label">Border
-            <input type="range" id="layout-border-width" min="0" max="3" value="0.5" step="0.5" class="range-input">
-            <span id="layout-border-width-val">0.5</span>
-          </label>
-          <label class="inline-label">Day Sep
-            <input type="range" id="layout-day-border-width" min="0" max="6" value="3" class="range-input">
-            <span id="layout-day-border-width-val">3</span>
-          </label>
-          <label class="toggle-label"><input type="checkbox" id="layout-cell-borders"> Cell Borders</label>
-        </div>
+      <!-- Layout button opens popup -->
+      <div class="settings-section">
+        <button class="section-header" id="open-layout-popup">Layout</button>
       </div>
 
       <!-- Wind Colors Section -->
@@ -205,6 +154,68 @@
       </div>
     </div>
     <button id="bottom-settings-toggle" class="bottom-settings-toggle-btn">Settings</button>
+  </div>
+
+  <!-- Layout Popup -->
+  <div id="layout-popup" class="layout-popup hidden">
+    <div class="layout-popup-backdrop"></div>
+    <div class="layout-popup-panel">
+      <div class="layout-popup-header">
+        <span>Layout</span>
+        <button id="layout-popup-done" class="layout-popup-done-btn">Done</button>
+      </div>
+      <div class="layout-popup-body">
+        <label class="inline-label">Col W
+          <input type="range" id="layout-cell-width" min="8" max="70" value="34" class="range-input">
+          <span id="layout-cell-width-val">34</span>
+        </label>
+        <label class="inline-label">Row H
+          <input type="range" id="layout-cell-height" min="8" max="50" value="28" class="range-input">
+          <span id="layout-cell-height-val">28</span>
+        </label>
+        <label class="inline-label">Hdr H
+          <input type="range" id="layout-header-height" min="10" max="70" value="42" class="range-input">
+          <span id="layout-header-height-val">42</span>
+        </label>
+        <label class="inline-label">Label W
+          <input type="range" id="layout-alt-width" min="10" max="100" value="60" class="range-input">
+          <span id="layout-alt-width-val">60</span>
+        </label>
+        <label class="inline-label">Font
+          <input type="range" id="layout-font-size" min="4" max="16" value="11" class="range-input">
+          <span id="layout-font-size-val">11</span>
+        </label>
+        <label class="inline-label">Hdr Font
+          <input type="range" id="layout-header-font-size" min="4" max="14" value="9" class="range-input">
+          <span id="layout-header-font-size-val">9</span>
+        </label>
+        <label class="inline-label">Pad
+          <input type="range" id="layout-cell-pad" min="0" max="6" value="2" class="range-input">
+          <span id="layout-cell-pad-val">2</span>
+        </label>
+        <label class="inline-label">Extra Font
+          <input type="range" id="layout-supp-font-size" min="4" max="14" value="9" class="range-input">
+          <span id="layout-supp-font-size-val">9</span>
+        </label>
+        <label class="inline-label">Arrow
+          <input type="range" id="layout-arrow-size" min="0" max="18" value="10" class="range-input">
+          <span id="layout-arrow-size-val">10</span>
+        </label>
+        <label class="inline-label">Gap
+          <input type="range" id="layout-table-gap" min="0" max="24" value="8" class="range-input">
+          <span id="layout-table-gap-val">8</span>
+        </label>
+        <label class="inline-label">Border
+          <input type="range" id="layout-border-width" min="0" max="3" value="0.5" step="0.5" class="range-input">
+          <span id="layout-border-width-val">0.5</span>
+        </label>
+        <label class="inline-label">Day Sep
+          <input type="range" id="layout-day-border-width" min="0" max="6" value="3" class="range-input">
+          <span id="layout-day-border-width-val">3</span>
+        </label>
+        <label class="toggle-label"><input type="checkbox" id="layout-cell-borders"> Cell Borders</label>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>

@@ -722,11 +722,6 @@ body {
   padding: 0.5rem 0.75rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  transition: opacity 0.2s;
-}
-
-.bottom-settings-inner.layout-active {
-  opacity: 0.6;
   gap: 0.4rem;
   max-height: 50vh;
   overflow-y: auto;
@@ -787,6 +782,79 @@ body {
 
 .bottom-settings-inner .range-input {
   width: 70px;
+}
+
+/* === Layout Popup === */
+.layout-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-popup.hidden {
+  display: none;
+}
+
+.layout-popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.layout-popup-panel {
+  position: relative;
+  background: rgba(30, 32, 42, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  min-width: 220px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1;
+}
+
+.layout-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.layout-popup-done-btn {
+  padding: 0.3rem 0.9rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.layout-popup-done-btn:hover {
+  background: var(--accent-hover);
+}
+
+.layout-popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.layout-popup-body .inline-label {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.layout-popup-body .range-input {
+  width: 90px;
 }
 
 /* === Responsive === */
