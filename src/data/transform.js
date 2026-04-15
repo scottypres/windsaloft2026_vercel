@@ -3,22 +3,43 @@ import { MODEL_CONFIGS, ENSEMBLE_CONFIGS } from './models.js';
 
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+// Parse ISO strings directly to avoid browser timezone reinterpretation.
+// Open-Meteo returns times in the location's timezone (via timezone=auto)
+// without an offset, e.g. "2024-01-15T14:00". Parsing these with new Date()
+// applies the browser's local timezone, which can shift hours/dates if the
+// browser timezone differs from the location timezone. Instead, we split
+// the string to extract the components directly.
+
+function parseISO(isoStr) {
+  // "2024-01-15T14:00" → year=2024, month=1, day=15, hour=14
+  const [datePart, timePart] = isoStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const hour = timePart ? parseInt(timePart.split(':')[0], 10) : 0;
+  return { year, month, day, hour };
+}
+
+function dayOfWeekFromDate(year, month, day) {
+  // Zeller-like formula using a known reference (2000-01-01 = Saturday = 6)
+  // Use UTC Date constructor to avoid timezone shifts
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return d.getUTCDay();
+}
+
 function formatHour(isoStr) {
-  const d = new Date(isoStr);
-  let h = d.getHours();
-  const ampm = h >= 12 ? 'P' : 'A';
-  h = h % 12 || 12;
+  const { hour } = parseISO(isoStr);
+  const ampm = hour >= 12 ? 'P' : 'A';
+  const h = hour % 12 || 12;
   return `${h}${ampm}`;
 }
 
 function formatDate(isoStr) {
-  const d = new Date(isoStr);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
+  const { month, day } = parseISO(isoStr);
+  return `${month}/${day}`;
 }
 
 function formatDayOfWeek(isoStr) {
-  const d = new Date(isoStr);
-  return DAY_NAMES[d.getDay()];
+  const { year, month, day } = parseISO(isoStr);
+  return DAY_NAMES[dayOfWeekFromDate(year, month, day)];
 }
 
 // Extend is_day by 1 hour on each side of sunrise/sunset
@@ -189,6 +210,7 @@ export function transformWeatherData(raw, modelId) {
   return {
     model: modelId,
     modelLabel: config.label,
+    timezone: raw.timezone || null,
     hours,
     altitudes,
     cloudAltitudes,
@@ -364,6 +386,7 @@ export function transformEnsembleData(raw, ensembleModelId) {
   return {
     model: ensembleModelId,
     modelLabel: ensConfig.label,
+    timezone: raw.timezone || null,
     isEnsemble: true,
     hours,
     altitudes,
