@@ -1,4 +1,14 @@
+import { MODEL_ORDER, MODEL_CONFIGS } from '../data/models.js';
+
 const PREFS_KEY = 'soar_preferences';
+
+// Build default toggles/days from model configs
+const DEFAULT_TOGGLES = {};
+const DEFAULT_DAYS = {};
+for (const id of MODEL_ORDER) {
+  DEFAULT_TOGGLES[id] = true;
+  DEFAULT_DAYS[id] = MODEL_CONFIGS[id].defaultDays;
+}
 
 const DEFAULTS = {
   view: 'wind',
@@ -8,8 +18,9 @@ const DEFAULTS = {
   showFogMode: false,
   bestHoursThreshold: null,
   windThresholds: { calm: 7, moderate: 13, strong: 21 },
-  gfsDays: 14,
-  iconDays: 7,
+  modelToggles: { ...DEFAULT_TOGGLES },
+  modelDays: { ...DEFAULT_DAYS },
+  ensembleDays: 14,
   supplementaryRows: {
     gusts: true,
     cape: true,
@@ -49,19 +60,43 @@ const DEFAULTS = {
 export function loadPrefs() {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return { ...DEFAULTS, supplementaryRows: { ...DEFAULTS.supplementaryRows }, windThresholds: { ...DEFAULTS.windThresholds }, savedLocations: [] };
+    if (!raw) return freshDefaults();
     const saved = JSON.parse(raw);
+
+    // Migrate old gfsDays/iconDays into modelDays
+    const modelDays = { ...DEFAULT_DAYS, ...saved.modelDays };
+    if (saved.gfsDays && !saved.modelDays?.gfs_seamless) {
+      modelDays.gfs_seamless = saved.gfsDays;
+    }
+    if (saved.iconDays && !saved.modelDays?.icon) {
+      modelDays.icon = saved.iconDays;
+    }
+
     return {
       ...DEFAULTS,
       ...saved,
       windThresholds: { ...DEFAULTS.windThresholds, ...saved.windThresholds },
+      modelToggles: { ...DEFAULT_TOGGLES, ...saved.modelToggles },
+      modelDays,
       supplementaryRows: { ...DEFAULTS.supplementaryRows, ...saved.supplementaryRows },
       layout: { ...DEFAULTS.layout, ...saved.layout },
       savedLocations: saved.savedLocations || [],
     };
   } catch {
-    return { ...DEFAULTS, supplementaryRows: { ...DEFAULTS.supplementaryRows }, windThresholds: { ...DEFAULTS.windThresholds }, layout: { ...DEFAULTS.layout }, savedLocations: [] };
+    return freshDefaults();
   }
+}
+
+function freshDefaults() {
+  return {
+    ...DEFAULTS,
+    windThresholds: { ...DEFAULTS.windThresholds },
+    modelToggles: { ...DEFAULT_TOGGLES },
+    modelDays: { ...DEFAULT_DAYS },
+    supplementaryRows: { ...DEFAULTS.supplementaryRows },
+    layout: { ...DEFAULTS.layout },
+    savedLocations: [],
+  };
 }
 
 export function savePrefs(prefs) {
@@ -78,11 +113,10 @@ export function resetPrefs() {
   } catch {
     // ignore
   }
-  return { ...DEFAULTS, supplementaryRows: { ...DEFAULTS.supplementaryRows }, windThresholds: { ...DEFAULTS.windThresholds }, savedLocations: [] };
+  return freshDefaults();
 }
 
 export function addSavedLocation(prefs, location) {
-  // Don't duplicate
   const exists = prefs.savedLocations.some(
     (l) => l.lat.toFixed(3) === location.lat.toFixed(3) && l.lon.toFixed(3) === location.lon.toFixed(3)
   );

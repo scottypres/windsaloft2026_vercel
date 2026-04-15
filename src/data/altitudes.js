@@ -5,8 +5,13 @@ const PRESSURE_TO_FEET = {
   950: 1640,
   925: 2625,
   900: 3281,
+  875: 4100,
   850: 4921,
+  825: 5807,
   800: 6234,
+  775: 7185,
+  750: 8091,
+  725: 9052,
   700: 9843,
   600: 13780,
   500: 18373,
@@ -22,92 +27,74 @@ const PRESSURE_TO_FEET = {
 const SURFACE_TO_FEET = {
   10: 33,
   80: 262,
+  100: 328,
+  120: 394,
   180: 591,
+  200: 656,
 };
 
-// Wind/temperature altitude rows (ordered highest to lowest)
-// These have wind speed, wind direction, and temperature data
-const WIND_TEMP_PRESSURE_LEVELS = [400, 500, 600, 700, 800, 850, 900, 925, 950, 975, 1000];
-const WIND_TEMP_SURFACE_LEVELS = [180, 80, 10];
+// Build altitude rows dynamically from a model config.
+// Returns rows ordered highest to lowest.
+export function buildAltitudeRows(config) {
+  const rows = [];
 
-// Cloud cover pressure levels (more levels than wind/temp)
-const CLOUD_PRESSURE_LEVELS = [
-  100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 850, 900, 925, 950, 975, 1000,
-];
+  // Pressure level rows
+  for (const hPa of config.pressureLevels) {
+    const feet = PRESSURE_TO_FEET[hPa];
+    if (feet == null) continue;
+    rows.push({
+      key: `${hPa}hPa`,
+      feet,
+      type: 'pressure',
+      hPa,
+      windSpeedParam: `${config.windParamPrefix}${hPa}hPa`,
+      windDirParam: `${config.windDirParamPrefix}${hPa}hPa`,
+      tempParam: `temperature_${hPa}hPa`,
+      cloudParam: `cloud_cover_${hPa}hPa`,
+      isHighAltitude: feet > 10000,
+    });
+  }
 
-// Build ordered altitude row definitions for wind/temp views
-// Highest to lowest
-// Base altitude rows shared by both models (pressure levels + common surface)
-const BASE_ALTITUDE_ROWS = [
-  ...WIND_TEMP_PRESSURE_LEVELS.map((hPa) => ({
-    key: `${hPa}hPa`,
-    feet: PRESSURE_TO_FEET[hPa],
-    type: 'pressure',
-    hPa,
-    windSpeedParam: `windspeed_${hPa}hPa`,
-    windDirParam: `winddirection_${hPa}hPa`,
-    tempParam: `temperature_${hPa}hPa`,
-    cloudParam: `cloud_cover_${hPa}hPa`,
-    isHighAltitude: PRESSURE_TO_FEET[hPa] > 5000,
-  })),
-];
+  // Sort pressure rows highest to lowest
+  rows.sort((a, b) => b.feet - a.feet);
 
-const SURFACE_80M = {
-  key: '80m',
-  feet: SURFACE_TO_FEET[80],
-  type: 'surface',
-  meters: 80,
-  windSpeedParam: 'wind_speed_80m',
-  windDirParam: 'wind_direction_80m',
-  tempParam: 'temperature_80m',
-  cloudParam: null,
-  isHighAltitude: false,
-};
+  // Surface level rows (appended lowest after pressure rows)
+  const surfaceRows = config.surfaceLevels
+    .slice()
+    .sort((a, b) => b - a) // highest first
+    .map((meters) => ({
+      key: `${meters}m`,
+      feet: SURFACE_TO_FEET[meters],
+      type: 'surface',
+      meters,
+      windSpeedParam: `wind_speed_${meters}m`,
+      windDirParam: `wind_direction_${meters}m`,
+      tempParam: meters === 10 ? 'temperature_2m' : `temperature_${meters}m`,
+      cloudParam: null,
+      isHighAltitude: false,
+    }));
 
-const SURFACE_10M = {
-  key: '10m',
-  feet: SURFACE_TO_FEET[10],
-  type: 'surface',
-  meters: 10,
-  windSpeedParam: 'wind_speed_10m',
-  windDirParam: 'wind_direction_10m',
-  tempParam: 'temperature_2m',
-  cloudParam: null,
-  isHighAltitude: false,
-};
+  return [...rows, ...surfaceRows];
+}
 
-const SURFACE_180M = {
-  key: '180m',
-  feet: SURFACE_TO_FEET[180],
-  type: 'surface',
-  meters: 180,
-  windSpeedParam: 'wind_speed_180m',
-  windDirParam: 'wind_direction_180m',
-  tempParam: 'temperature_180m',
-  cloudParam: null,
-  isHighAltitude: false,
-};
-
-// GFS: no 180m/591ft row (data not available)
-export const GFS_ALTITUDE_ROWS = [...BASE_ALTITUDE_ROWS, SURFACE_80M, SURFACE_10M];
-
-// ICON: includes 180m/591ft row
-export const ICON_ALTITUDE_ROWS = [...BASE_ALTITUDE_ROWS, SURFACE_180M, SURFACE_80M, SURFACE_10M];
-
-// Default export for backward compat
-export const WIND_ALTITUDE_ROWS = ICON_ALTITUDE_ROWS;
-
-// Cloud view altitude rows (highest to lowest)
-export const CLOUD_ALTITUDE_ROWS = [
-  ...CLOUD_PRESSURE_LEVELS.map((hPa) => ({
-    key: `${hPa}hPa`,
-    feet: PRESSURE_TO_FEET[hPa],
-    type: 'pressure',
-    hPa,
-    cloudParam: `cloud_cover_${hPa}hPa`,
-    isHighAltitude: PRESSURE_TO_FEET[hPa] > 5000,
-  })),
-];
+// Build cloud altitude rows from a model config.
+export function buildCloudAltitudeRows(config) {
+  const levels = config.cloudPressureLevels || [];
+  const rows = levels.map((hPa) => {
+    const feet = PRESSURE_TO_FEET[hPa];
+    return {
+      key: `${hPa}hPa`,
+      feet,
+      type: 'pressure',
+      hPa,
+      cloudParam: `cloud_cover_${hPa}hPa`,
+      isHighAltitude: feet > 10000,
+    };
+  });
+  // Highest to lowest
+  rows.sort((a, b) => b.feet - a.feet);
+  return rows;
+}
 
 // The 3 lowest altitude rows for "Best Hours" filter
 export const LOWEST_3_KEYS = ['10m', '80m', '1000hPa'];

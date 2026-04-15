@@ -15,6 +15,7 @@
           <button class="view-btn active" data-view="wind">Wind</button>
           <button class="view-btn" data-view="temp">Temp</button>
           <button class="view-btn" data-view="clouds">Clouds</button>
+          <button class="view-btn" data-view="ensemble">Ensemble</button>
         </div>
         <button id="toggle-settings" class="toggle-settings-btn">Settings</button>
       </div>
@@ -30,11 +31,27 @@
     </div>
 
     <div class="tables-wrapper">
-      <div class="table-section">
-        <div id="gfs-table" class="table-container"></div>
+      <div class="table-section" data-model="hrrr">
+        <div id="hrrr-table" class="table-container"></div>
       </div>
-      <div class="table-section">
+      <div class="table-section" data-model="ecmwf" data-sync-group="global">
+        <div id="ecmwf-table" class="table-container"></div>
+      </div>
+      <div class="table-section" data-model="gfs_seamless" data-sync-group="global">
+        <div id="gfs-seamless-table" class="table-container"></div>
+      </div>
+      <div class="table-section" data-model="icon" data-sync-group="global">
         <div id="icon-table" class="table-container"></div>
+      </div>
+      <div class="table-section" data-model="nam">
+        <div id="nam-table" class="table-container"></div>
+      </div>
+      <!-- Ensemble tables (hidden until ensemble view is active) -->
+      <div class="table-section ensemble-section hidden" data-model="gefs" data-sync-group="ensemble">
+        <div id="gefs-table" class="table-container"></div>
+      </div>
+      <div class="table-section ensemble-section hidden" data-model="ecmwf_ens" data-sync-group="ensemble">
+        <div id="ecmwf-ens-table" class="table-container"></div>
       </div>
     </div>
   </div>
@@ -46,7 +63,7 @@
         <button class="section-header" data-section="filters">Filters</button>
         <div class="section-body">
           <label class="toggle-label"><input type="checkbox" id="daylight-filter"> Daylight Only</label>
-          <label class="toggle-label"><input type="checkbox" id="hide-high-alt"> Hide &gt;5000ft</label>
+          <label class="toggle-label"><input type="checkbox" id="hide-high-alt"> Hide &gt;10k ft</label>
           <label class="toggle-label"><input type="checkbox" id="wind-shear"> Wind Shear</label>
           <label class="toggle-label"><input type="checkbox" id="fog-mode"> Fog Mode</label>
           <label class="toggle-label">
@@ -76,17 +93,34 @@
         </div>
       </div>
 
-      <!-- Forecast Section -->
-      <div class="settings-section" id="section-forecast">
-        <button class="section-header" data-section="forecast">Forecast</button>
+      <!-- Models Section -->
+      <div class="settings-section" id="section-models">
+        <button class="section-header" data-section="models">Models &amp; Forecast</button>
         <div class="section-body">
-          <label class="inline-label">GFS:
-            <input type="range" id="gfs-days" min="1" max="14" value="7" class="range-input">
-            <span id="gfs-days-val">7</span>
+          <label class="toggle-label model-toggle">
+            <input type="checkbox" data-model-toggle="hrrr" checked> HRRR
+            <input type="range" data-model-days="hrrr" min="1" max="3" value="3" class="range-input">
+            <span data-model-days-val="hrrr">3</span>d
           </label>
-          <label class="inline-label">ICON:
-            <input type="range" id="icon-days" min="1" max="7" value="5" class="range-input">
-            <span id="icon-days-val">5</span>
+          <label class="toggle-label model-toggle">
+            <input type="checkbox" data-model-toggle="ecmwf" checked> ECMWF
+            <input type="range" data-model-days="ecmwf" min="1" max="15" value="10" class="range-input">
+            <span data-model-days-val="ecmwf">10</span>d
+          </label>
+          <label class="toggle-label model-toggle">
+            <input type="checkbox" data-model-toggle="gfs_seamless" checked> GFS
+            <input type="range" data-model-days="gfs_seamless" min="1" max="14" value="7" class="range-input">
+            <span data-model-days-val="gfs_seamless">7</span>d
+          </label>
+          <label class="toggle-label model-toggle">
+            <input type="checkbox" data-model-toggle="icon" checked> ICON
+            <input type="range" data-model-days="icon" min="1" max="7" value="5" class="range-input">
+            <span data-model-days-val="icon">5</span>d
+          </label>
+          <label class="toggle-label model-toggle">
+            <input type="checkbox" data-model-toggle="nam" checked> NAM
+            <input type="range" data-model-days="nam" min="1" max="4" value="4" class="range-input">
+            <span data-model-days-val="nam">4</span>d
           </label>
           <button id="show-all-locations" class="action-btn">Show All Locations</button>
           <button id="reset-defaults" class="action-btn danger-btn">Reset Defaults</button>

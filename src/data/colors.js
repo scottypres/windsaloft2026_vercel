@@ -134,6 +134,47 @@ export function visibilityColor(miles) {
   return rgb(lerp([70, 200, 100], [220, 50, 50], t));
 }
 
+// Blend a color toward neutral gray based on confidence factor.
+// factor: 1.0 = full original color, 0.0 = fully gray.
+// Used for ensemble spread overlay — high spread = low confidence = grayed out.
+export function blendTowardGray(color, factor) {
+  const match = color.match(/\d+/g);
+  if (!match) return color;
+  const [r, g, b] = match.map(Number);
+  const gray = 180;
+  const f = Math.max(0, Math.min(1, factor));
+  const nr = Math.round(gray + (r - gray) * f);
+  const ng = Math.round(gray + (g - gray) * f);
+  const nb = Math.round(gray + (b - gray) * f);
+  return `rgb(${nr},${ng},${nb})`;
+}
+
+// Ensemble spread color: green (low spread/high confidence) → yellow → red (high spread/low confidence)
+// spread < 1 = deep green, spread 1-3 = green, 3-5 = yellow, 5-8 = orange, >8 = red
+export function spreadColor(spread) {
+  if (spread == null) return '#555';
+
+  const green = [40, 180, 80];
+  const yellow = [220, 200, 40];
+  const orange = [230, 130, 40];
+  const red = [210, 50, 50];
+
+  if (spread <= 1) return rgb([30, 160, 60]);
+  if (spread <= 3) {
+    const t = (spread - 1) / 2;
+    return rgb(lerp(green, yellow, t));
+  }
+  if (spread <= 6) {
+    const t = (spread - 3) / 3;
+    return rgb(lerp(yellow, orange, t));
+  }
+  if (spread <= 10) {
+    const t = (spread - 6) / 4;
+    return rgb(lerp(orange, red, t));
+  }
+  return rgb(red);
+}
+
 // Get contrasting text color for a background
 export function textColorFor(bgColor) {
   // Parse rgb values

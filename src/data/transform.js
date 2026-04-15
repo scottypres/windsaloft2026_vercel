@@ -1,4 +1,5 @@
-import { GFS_ALTITUDE_ROWS, ICON_ALTITUDE_ROWS, CLOUD_ALTITUDE_ROWS } from './altitudes.js';
+import { buildAltitudeRows, buildCloudAltitudeRows } from './altitudes.js';
+import { MODEL_CONFIGS, ENSEMBLE_CONFIGS } from './models.js';
 
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -24,11 +25,9 @@ function formatDayOfWeek(isoStr) {
 function extendDaylight(isDay) {
   const extended = [...isDay];
   for (let i = 1; i < extended.length; i++) {
-    // Sunrise transition: 0→1, extend previous hour
     if (isDay[i] === 1 && isDay[i - 1] === 0) {
       extended[i - 1] = 1;
     }
-    // Sunset transition: 1→0, extend next hour
     if (isDay[i - 1] === 1 && isDay[i] === 0) {
       extended[i] = 1;
     }
@@ -36,7 +35,6 @@ function extendDaylight(isDay) {
   return extended;
 }
 
-// Build sunrise/sunset lookup from daily data
 function buildSunTimes(daily) {
   const sunTimes = {};
   if (!daily?.sunrise) return sunTimes;
@@ -49,15 +47,8 @@ function buildSunTimes(daily) {
   return sunTimes;
 }
 
-export function transformWeatherData(raw, model) {
-  const hourly = raw.hourly;
-  const daily = raw.daily;
-  const times = hourly.time;
-  const isDay = extendDaylight(hourly.is_day || []);
-  const sunTimes = buildSunTimes(daily);
-
-  // Build hours array
-  const hours = times.map((t, i) => {
+function buildHours(times, isDay, sunTimes) {
+  return times.map((t, i) => {
     const dateStr = t.split('T')[0];
     return {
       time: t,
@@ -70,16 +61,16 @@ export function transformWeatherData(raw, model) {
       sunset: sunTimes[dateStr]?.sunset || null,
     };
   });
+}
 
-  // Build wind/temp altitude data (model-specific rows)
-  const altitudeRowDefs = model === 'gfs' ? GFS_ALTITUDE_ROWS : ICON_ALTITUDE_ROWS;
-  const altitudes = altitudeRowDefs.map((row) => {
-    const windSpeeds = hourly[row.windSpeedParam] || new Array(times.length).fill(null);
-    const windDirs = hourly[row.windDirParam] || new Array(times.length).fill(null);
-    const temps = hourly[row.tempParam] || new Array(times.length).fill(null);
+function buildAltitudeData(altitudeRowDefs, hourly, numHours) {
+  return altitudeRowDefs.map((row) => {
+    const windSpeeds = hourly[row.windSpeedParam] || new Array(numHours).fill(null);
+    const windDirs = hourly[row.windDirParam] || new Array(numHours).fill(null);
+    const temps = hourly[row.tempParam] || new Array(numHours).fill(null);
     const clouds = row.cloudParam
-      ? hourly[row.cloudParam] || new Array(times.length).fill(null)
-      : new Array(times.length).fill(null);
+      ? hourly[row.cloudParam] || new Array(numHours).fill(null)
+      : new Array(numHours).fill(null);
 
     return {
       key: row.key,
@@ -95,26 +86,18 @@ export function transformWeatherData(raw, model) {
       cloud: clouds,
     };
   });
+}
 
-  // Build cloud altitude data
-  const cloudAltitudes = CLOUD_ALTITUDE_ROWS.map((row) => {
-    const clouds = hourly[row.cloudParam] || new Array(times.length).fill(null);
-    return {
-      key: row.key,
-      feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
-      cloud: clouds,
-    };
-  });
-
-  // Surface / supplementary data
-  const surface = {
+function buildSurface(hourly) {
+  return {
     gusts: hourly.wind_gusts_10m || [],
     cape: hourly.cape || null,
     liftedIndex: hourly.lifted_index || null,
     precipProb: hourly.precipitation_probability || null,
     precipInches: hourly.precipitation || null,
+    // Also check rain + showers for models that use those instead
+    rainInches: hourly.rain || null,
+    showersInches: hourly.showers || null,
     temp2m: hourly.temperature_2m || [],
     humidity: hourly.relative_humidity_2m || [],
     dewpoint: hourly.dew_point_2m || [],
@@ -132,8 +115,69 @@ export function transformWeatherData(raw, model) {
     boundaryLayerHeight: hourly.boundary_layer_height || null,
     weatherCode: hourly.weather_code || [],
   };
+}
 
-  // Daily summaries
+// Find the last hour index with valid surface wind data.
+// Returns trimmed length (lastValidIndex + 1).
+function findLastValidWindHour(altitudes, totalHours) {
+  // Use the lowest surface altitude (10m) to detect null trailing hours
+  const surfaceAlt = altitudes.find((a) => a.key === '10m') || altitudes[altitudes.length - 1];
+  if (!surfaceAlt) return totalHours;
+
+  let last = totalHours - 1;
+  while (last >= 0 && surfaceAlt.wind[last]?.speed == null) {
+    last--;
+  }
+  return last + 1;
+}
+
+export function transformWeatherData(raw, modelId) {
+  const config = MODEL_CONFIGS[modelId];
+  if (!config) throw new Error(`Unknown model config: ${modelId}`);
+
+  const hourly = raw.hourly;
+  const daily = raw.daily;
+  const times = hourly.time;
+  const isDay = extendDaylight(hourly.is_day || []);
+  const sunTimes = buildSunTimes(daily);
+
+  const hours = buildHours(times, isDay, sunTimes);
+  const altitudeRowDefs = buildAltitudeRows(config);
+  const altitudes = buildAltitudeData(altitudeRowDefs, hourly, times.length);
+
+  const cloudRowDefs = buildCloudAltitudeRows(config);
+  const cloudAltitudes = cloudRowDefs.map((row) => {
+    const clouds = hourly[row.cloudParam] || new Array(times.length).fill(null);
+    return {
+      key: row.key,
+      feet: row.feet,
+      label: `${row.feet.toLocaleString()}ft`,
+      isHighAltitude: row.isHighAltitude,
+      cloud: clouds,
+    };
+  });
+
+  const surface = buildSurface(hourly);
+
+  // Trim trailing hours where surface wind data is null (HRRR/NAM stop early)
+  const trimLen = findLastValidWindHour(altitudes, hours.length);
+  if (trimLen < hours.length) {
+    hours.length = trimLen;
+    for (const alt of altitudes) {
+      alt.wind.length = trimLen;
+      alt.temp.length = trimLen;
+      alt.cloud.length = trimLen;
+    }
+    for (const ca of cloudAltitudes) {
+      ca.cloud.length = trimLen;
+    }
+    for (const key of Object.keys(surface)) {
+      if (Array.isArray(surface[key])) {
+        surface[key].length = trimLen;
+      }
+    }
+  }
+
   const dailyData = daily
     ? {
         uvMax: daily.uv_index_max || [],
@@ -143,12 +187,189 @@ export function transformWeatherData(raw, model) {
     : null;
 
   return {
-    model,
+    model: modelId,
+    modelLabel: config.label,
     hours,
     altitudes,
     cloudAltitudes,
     surface,
     daily: dailyData,
     currentWeather: raw.current_weather || null,
+  };
+}
+
+// --- Ensemble transform ---
+
+// Extract ensemble mean and compute per-member spread (std dev)
+function extractEnsembleMeanAndSpread(hourly, baseParam, suffix, memberCount, numHours) {
+  const meanKey = `${baseParam}${suffix}`;
+  const meanArr = hourly[meanKey] || new Array(numHours).fill(null);
+
+  // Collect member arrays
+  const memberArrays = [];
+  for (let m = 1; m <= memberCount; m++) {
+    const memberKey = `${baseParam}_member${String(m).padStart(2, '0')}${suffix}`;
+    const arr = hourly[memberKey];
+    if (arr) memberArrays.push(arr);
+  }
+
+  if (memberArrays.length === 0) {
+    return { mean: meanArr, spread: new Array(numHours).fill(null) };
+  }
+
+  const spread = new Array(numHours);
+  for (let i = 0; i < numHours; i++) {
+    const vals = [];
+    for (const arr of memberArrays) {
+      if (arr[i] != null) vals.push(arr[i]);
+    }
+    if (vals.length < 2) {
+      spread[i] = null;
+    } else {
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const variance = vals.reduce((sum, v) => sum + (v - avg) ** 2, 0) / vals.length;
+      spread[i] = Math.sqrt(variance);
+    }
+  }
+
+  return { mean: meanArr, spread };
+}
+
+export function transformEnsembleData(raw, ensembleModelId) {
+  const ensConfig = ENSEMBLE_CONFIGS[ensembleModelId];
+  if (!ensConfig) throw new Error(`Unknown ensemble config: ${ensembleModelId}`);
+
+  const hourly = raw.hourly;
+  const times = hourly.time;
+  const numHours = times.length;
+  const suffix = ensConfig.fieldSuffix;
+  const mc = ensConfig.memberCount;
+
+  // Build is_day from the ensemble mean field
+  const isDayRaw = hourly[`is_day${suffix}`] || hourly.is_day || [];
+  const isDay = extendDaylight(isDayRaw);
+
+  const hours = buildHours(times, isDay, {});
+
+  // Build a pseudo model config for altitude row generation
+  // Ensemble uses wind_speed_ prefix (with underscore)
+  const pseudoConfig = {
+    pressureLevels: ensConfig.pressureLevels,
+    cloudPressureLevels: ensConfig.cloudPressureLevels,
+    surfaceLevels: ensConfig.surfaceLevels,
+    windParamPrefix: 'wind_speed_',
+    windDirParamPrefix: 'wind_direction_',
+  };
+
+  const altRowDefs = buildAltitudeRows(pseudoConfig);
+
+  // Build altitude data with spread
+  const altitudes = altRowDefs.map((row) => {
+    // The actual API field names have the ensemble suffix
+    const speedBase = row.windSpeedParam; // e.g. wind_speed_850hPa
+    const dirBase = row.windDirParam;
+    const tempBase = row.tempParam;
+
+    const speedData = extractEnsembleMeanAndSpread(hourly, speedBase, suffix, mc, numHours);
+    const dirData = extractEnsembleMeanAndSpread(hourly, dirBase, suffix, mc, numHours);
+    const tempData = extractEnsembleMeanAndSpread(hourly, tempBase, suffix, mc, numHours);
+
+    return {
+      key: row.key,
+      feet: row.feet,
+      label: `${row.feet.toLocaleString()}ft`,
+      isHighAltitude: row.isHighAltitude,
+      wind: speedData.mean.map((speed, i) => ({
+        speed: speed != null ? Math.round(speed) : null,
+        direction: dirData.mean[i],
+        displayDirection: dirData.mean[i] != null ? (dirData.mean[i] + 180) % 360 : null,
+        spread: speedData.spread[i] != null ? Math.round(speedData.spread[i] * 10) / 10 : null,
+      })),
+      temp: tempData.mean,
+      tempSpread: tempData.spread,
+      cloud: row.cloudParam
+        ? (hourly[`${row.cloudParam}${suffix}`] || new Array(numHours).fill(null))
+        : new Array(numHours).fill(null),
+    };
+  });
+
+  // Cloud altitude rows
+  const cloudRowDefs = buildCloudAltitudeRows(pseudoConfig);
+  const cloudAltitudes = cloudRowDefs.map((row) => {
+    const clouds = hourly[`${row.cloudParam}${suffix}`] || new Array(numHours).fill(null);
+    return {
+      key: row.key,
+      feet: row.feet,
+      label: `${row.feet.toLocaleString()}ft`,
+      isHighAltitude: row.isHighAltitude,
+      cloud: clouds,
+    };
+  });
+
+  // Surface data from ensemble means + spread
+  const sfms = (param) => extractEnsembleMeanAndSpread(hourly, param, suffix, mc, numHours);
+
+  const gustsData = sfms('wind_gusts_10m');
+  const capeData = sfms('cape');
+  const rainData = sfms('rain');
+  const temp2mData = sfms('temperature_2m');
+  const humidityData = sfms('relative_humidity_2m');
+  const dewpointData = sfms('dew_point_2m');
+  const visData = sfms('visibility');
+  const cloudCoverData = sfms('cloud_cover');
+  const cloudLowData = sfms('cloud_cover_low');
+  const cloudMidData = sfms('cloud_cover_mid');
+  const cloudHighData = sfms('cloud_cover_high');
+
+  const temp2m = temp2mData.mean;
+  const dewpoint = dewpointData.mean;
+
+  const surface = {
+    gusts: gustsData.mean,
+    gustsSpread: gustsData.spread,
+    cape: capeData.mean.some((v) => v != null) ? capeData.mean : null,
+    capeSpread: capeData.spread,
+    liftedIndex: null,
+    precipProb: null,
+    precipInches: null,
+    rainInches: rainData.mean.some((v) => v != null) ? rainData.mean : null,
+    rainSpread: rainData.spread,
+    showersInches: null,
+    temp2m,
+    temp2mSpread: temp2mData.spread,
+    humidity: humidityData.mean,
+    humiditySpread: humidityData.spread,
+    dewpoint,
+    dewpointSpread: temp2m.map((t, i) => {
+      const dp = dewpoint[i];
+      return t != null && dp != null ? Math.round((t - dp) * 10) / 10 : null;
+    }),
+    dewpointSpreadSpread: temp2mData.spread, // spread of temp ≈ spread of dp spread
+    visibility: visData.mean.some((v) => v != null)
+      ? visData.mean.map((v) => (v != null ? Math.round(v * 0.000621371 * 10) / 10 : null))
+      : null,
+    visibilitySpread: visData.spread,
+    cloudCover: cloudCoverData.mean,
+    cloudCoverSpread: cloudCoverData.spread,
+    cloudLow: cloudLowData.mean,
+    cloudLowSpread: cloudLowData.spread,
+    cloudMid: cloudMidData.mean,
+    cloudMidSpread: cloudMidData.spread,
+    cloudHigh: cloudHighData.mean,
+    cloudHighSpread: cloudHighData.spread,
+    boundaryLayerHeight: null,
+    weatherCode: [],
+  };
+
+  return {
+    model: ensembleModelId,
+    modelLabel: ensConfig.label,
+    isEnsemble: true,
+    hours,
+    altitudes,
+    cloudAltitudes,
+    surface,
+    daily: null,
+    currentWeather: null,
   };
 }

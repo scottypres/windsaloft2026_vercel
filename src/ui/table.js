@@ -11,6 +11,7 @@ import {
   humidityColor,
   visibilityColor,
   textColorFor,
+  spreadColor,
 } from '../data/colors.js';
 import { LOWEST_3_KEYS } from '../data/altitudes.js';
 
@@ -23,8 +24,9 @@ export function renderTable(container, data, options = {}) {
     hideHighAltitude = false,
     showWindShear = false,
     showFogMode = false,
-    bestHoursThreshold = null, // null = disabled, number = max mph
+    bestHoursThreshold = null,
     supplementaryRows = {},
+    isEnsemble = false,
   } = options;
 
   // Filter hours
@@ -64,9 +66,10 @@ export function renderTable(container, data, options = {}) {
   const html = [];
   html.push('<table class="forecast-table">');
 
-  // Header
+  // Header — show model label
+  const headerLabel = data.modelLabel || data.model.toUpperCase();
   html.push('<thead><tr>');
-  html.push(`<th class="corner-cell">${data.model.toUpperCase()}</th>`);
+  html.push(`<th class="corner-cell">${headerLabel}</th>`);
   let prevDate = '';
   for (const i of hourIndices) {
     const h = data.hours[i];
@@ -101,16 +104,23 @@ export function renderTable(container, data, options = {}) {
           ? ' day-boundary'
           : '';
 
-      if (view === 'wind') {
+      if (view === 'wind' || (isEnsemble && view !== 'clouds' && view !== 'temp')) {
         const w = alt.wind[i];
         const speed = w?.speed;
         const dir = w?.direction;
-        const bg = windColor(speed, windThresholds);
+        let bg;
+        if (isEnsemble) {
+          // Ensemble: color based on spread (confidence), not wind speed
+          bg = spreadColor(w?.spread);
+        } else {
+          bg = windColor(speed, windThresholds);
+        }
         const color = textColorFor(bg);
         const val = speed != null ? speed : '?';
         const arrow = windArrow(dir);
+        const title = isEnsemble && w?.spread != null ? ` title="\u00b1${w.spread} mph spread"` : '';
         html.push(
-          `<td class="cell ${dayClass}${boundary}" style="background:${bg};color:${color}" data-alt="${alt.key}" data-hour="${i}">` +
+          `<td class="cell ${dayClass}${boundary}" style="background:${bg};color:${color}" data-alt="${alt.key}" data-hour="${i}"${title}>` +
             `<div class="cell-value">${val}</div>${arrow ? `<div class="cell-arrow">${arrow}</div>` : ''}</td>`
         );
       } else if (view === 'temp') {
@@ -135,9 +145,8 @@ export function renderTable(container, data, options = {}) {
   }
 
   // Supplementary rows
-  if (view === 'wind' || view === 'clouds') {
-    const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows);
-    // Pre-compute fog likelihood per hour for highlighting supp cells
+  if (view === 'wind' || view === 'clouds' || isEnsemble) {
+    const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble);
     const fogLabels = new Set(['DP Spread', 'Temp °F', 'Vis (mi)']);
     for (const row of suppRows) {
       html.push('<tr class="supp-row">');
@@ -149,7 +158,6 @@ export function renderTable(container, data, options = {}) {
         const dayClass = h.isDay ? 'day-col' : 'night-col';
         const boundary =
           j > 0 && data.hours[hourIndices[j - 1]]?.dateLabel !== h.dateLabel ? ' day-boundary' : '';
-        // Fog warning on relevant supp cells
         let fogClass = '';
         if (showFogMode && fogLabels.has(row.label)) {
           const humidity = data.surface.humidity[hi];
@@ -176,34 +184,43 @@ export function renderTable(container, data, options = {}) {
   container.innerHTML = html.join('');
 
   // Post-render: wind shear detection
-  if (view === 'wind' && showWindShear) {
+  if ((view === 'wind' || isEnsemble) && showWindShear) {
     applyWindShear(container, data, altRows, hourIndices, hideHighAltitude);
   }
-
 }
 
-function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) {
+function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, isEnsemble) {
   const rows = [];
   const s = data.surface;
-  const model = data.model;
 
-  if (view === 'wind') {
+  // Helper: for ensemble view, use spread-based color; otherwise use field-specific color
+  function ensOrColor(spreadArr, i, normalBg) {
+    if (isEnsemble && spreadArr) {
+      const sp = spreadArr[i];
+      const bg = spreadColor(sp);
+      return { bg, color: textColorFor(bg) };
+    }
+    return { bg: normalBg, color: textColorFor(normalBg) };
+  }
+
+  if (view === 'wind' || view === 'ensemble') {
     if (shown.gusts) {
       rows.push(makeRow('Gusts', hourIndices, (i) => {
         const v = s.gusts[i];
         const val = v != null ? Math.round(v) : '?';
-        return { val, bg: windColor(v, windThresholds), color: textColorFor(windColor(v, windThresholds)) };
+        const { bg, color } = ensOrColor(s.gustsSpread, i, windColor(v, windThresholds));
+        return { val, bg, color };
       }));
     }
-    if (shown.cape && model === 'gfs' && s.cape) {
+    if (shown.cape && s.cape) {
       rows.push(makeRow('CAPE', hourIndices, (i) => {
         const v = s.cape[i];
         const val = v != null ? Math.round(v) : '?';
-        const bg = capeColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.capeSpread, i, capeColor(v));
+        return { val, bg, color };
       }));
     }
-    if (shown.liftedIndex && model === 'gfs' && s.liftedIndex) {
+    if (shown.liftedIndex && s.liftedIndex) {
       rows.push(makeRow('Lift Idx', hourIndices, (i) => {
         const v = s.liftedIndex[i];
         const val = v != null ? v.toFixed(1) : '?';
@@ -211,7 +228,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
         return { val, bg, color: textColorFor(bg) };
       }));
     }
-    if (shown.precipProb && model === 'gfs' && s.precipProb) {
+    if (shown.precipProb && s.precipProb) {
       rows.push(makeRow('Precip %', hourIndices, (i) => {
         const v = s.precipProb[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
@@ -219,84 +236,84 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
         return { val, bg, color: textColorFor(bg) };
       }));
     }
-    if (shown.precipInches && model === 'icon' && s.precipInches) {
+    if (shown.precipInches && (s.precipInches || s.rainInches)) {
+      const src = s.precipInches || s.rainInches;
       rows.push(makeRow('Precip in', hourIndices, (i) => {
-        const v = s.precipInches[i];
+        const v = src[i];
         const val = v != null ? v.toFixed(2) : '?';
-        const bg = precipInchesColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.rainSpread, i, precipInchesColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.temp) {
       rows.push(makeRow('Temp °F', hourIndices, (i) => {
         const v = s.temp2m[i];
         const val = v != null ? Math.round(v) : '?';
-        const bg = tempColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.temp2mSpread, i, tempColor(v));
+        return { val, bg, color };
       }));
     }
-    if (shown.humidity) {
+    if (shown.humidity && s.humidity && s.humidity.length) {
       rows.push(makeRow('Humidity', hourIndices, (i) => {
         const v = s.humidity[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = humidityColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.humiditySpread, i, humidityColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.dewpointSpread) {
       rows.push(makeRow('DP Spread', hourIndices, (i) => {
         const v = s.dewpointSpread[i];
         const val = v != null ? `${v}°` : '?';
-        const bg = v != null && v < 3 ? '#e74c3c' : v != null && v < 6 ? '#f0c040' : '#66bb6a';
-        return { val, bg, color: textColorFor(bg) };
+        const normalBg = v != null && v < 3 ? '#e74c3c' : v != null && v < 6 ? '#f0c040' : '#66bb6a';
+        const { bg, color } = ensOrColor(s.dewpointSpreadSpread, i, normalBg);
+        return { val, bg, color };
       }));
     }
-    if (shown.visibility && model === 'gfs' && s.visibility) {
+    if (shown.visibility && s.visibility) {
       rows.push(makeRow('Vis (mi)', hourIndices, (i) => {
         const v = s.visibility[i];
         const val = v != null ? v.toFixed(1) : '?';
-        const bg = visibilityColor(v);
-        return { val, bg, color: textColorFor(bg) };
+        const { bg, color } = ensOrColor(s.visibilitySpread, i, visibilityColor(v));
+        return { val, bg, color };
       }));
     }
     if (shown.cloudCover) {
       rows.push(makeRow('Clouds %', hourIndices, (i) => {
         const v = s.cloudCover[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        const color = cloudTextColor(v);
+        const { bg, color } = ensOrColor(s.cloudCoverSpread, i, cloudColor(v));
         return { val, bg, color };
       }));
     }
-    if (shown.cloudLow) {
+    if (shown.cloudLow && s.cloudLow && s.cloudLow.length) {
       rows.push(makeRow('Low Cld', hourIndices, (i) => {
         const v = s.cloudLow[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        return { val, bg, color: cloudTextColor(v) };
+        const { bg, color } = ensOrColor(s.cloudLowSpread, i, cloudColor(v));
+        return { val, bg, color };
       }));
     }
-    if (shown.cloudMid) {
+    if (shown.cloudMid && s.cloudMid && s.cloudMid.length) {
       rows.push(makeRow('Mid Cld', hourIndices, (i) => {
         const v = s.cloudMid[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        return { val, bg, color: cloudTextColor(v) };
+        const { bg, color } = ensOrColor(s.cloudMidSpread, i, cloudColor(v));
+        return { val, bg, color };
       }));
     }
-    if (shown.cloudHigh) {
+    if (shown.cloudHigh && s.cloudHigh && s.cloudHigh.length) {
       rows.push(makeRow('High Cld', hourIndices, (i) => {
         const v = s.cloudHigh[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
-        const bg = cloudColor(v);
-        return { val, bg, color: cloudTextColor(v) };
+        const { bg, color } = ensOrColor(s.cloudHighSpread, i, cloudColor(v));
+        return { val, bg, color };
       }));
     }
   }
 
   if (view === 'clouds') {
-    // High/Mid/Low cloud summary rows
-    if (shown.cloudHigh !== false) {
+    if (shown.cloudHigh !== false && s.cloudHigh && s.cloudHigh.length) {
       rows.push(makeRow('High Clouds', hourIndices, (i) => {
         const v = s.cloudHigh[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
@@ -304,7 +321,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
         return { val, bg, color: cloudTextColor(v) };
       }));
     }
-    if (shown.cloudMid !== false) {
+    if (shown.cloudMid !== false && s.cloudMid && s.cloudMid.length) {
       rows.push(makeRow('Mid Clouds', hourIndices, (i) => {
         const v = s.cloudMid[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
@@ -312,7 +329,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown) 
         return { val, bg, color: cloudTextColor(v) };
       }));
     }
-    if (shown.cloudLow !== false) {
+    if (shown.cloudLow !== false && s.cloudLow && s.cloudLow.length) {
       rows.push(makeRow('Low Clouds', hourIndices, (i) => {
         const v = s.cloudLow[i];
         const val = v != null ? `${Math.round(v)}%` : '?';
@@ -361,4 +378,3 @@ function applyWindShear(container, data, altRows, hourIndices, hideHighAltitude)
     }
   }
 }
-

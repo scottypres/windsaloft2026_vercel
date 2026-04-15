@@ -1,4 +1,6 @@
-// Wire up all settings controls (now in bottom panel + header view toggles)
+import { MODEL_ORDER } from '../data/models.js';
+
+// Wire up all settings controls
 export function initControls(callbacks) {
   // View toggles in the header
   const viewBtns = document.querySelectorAll('#header-view-toggles .view-btn');
@@ -56,24 +58,26 @@ export function initControls(callbacks) {
     });
   });
 
-  // Forecast day sliders
-  const gfsDays = document.getElementById('gfs-days');
-  const gfsDaysVal = document.getElementById('gfs-days-val');
-  gfsDays.addEventListener('input', () => {
-    gfsDaysVal.textContent = gfsDays.value;
-  });
-  gfsDays.addEventListener('change', () => {
-    callbacks.onForecastDaysChange('gfs', parseInt(gfsDays.value));
-  });
+  // Per-model toggles and day sliders
+  for (const modelId of MODEL_ORDER) {
+    const toggle = document.querySelector(`[data-model-toggle="${modelId}"]`);
+    const slider = document.querySelector(`[data-model-days="${modelId}"]`);
+    const valSpan = document.querySelector(`[data-model-days-val="${modelId}"]`);
 
-  const iconDays = document.getElementById('icon-days');
-  const iconDaysVal = document.getElementById('icon-days-val');
-  iconDays.addEventListener('input', () => {
-    iconDaysVal.textContent = iconDays.value;
-  });
-  iconDays.addEventListener('change', () => {
-    callbacks.onForecastDaysChange('icon', parseInt(iconDays.value));
-  });
+    if (toggle) {
+      toggle.addEventListener('change', (e) => {
+        callbacks.onModelToggle(modelId, e.target.checked);
+      });
+    }
+    if (slider && valSpan) {
+      slider.addEventListener('input', () => {
+        valSpan.textContent = slider.value;
+      });
+      slider.addEventListener('change', () => {
+        callbacks.onModelDaysChange(modelId, parseInt(slider.value));
+      });
+    }
+  }
 
   // Show all locations
   document.getElementById('show-all-locations').addEventListener('click', () => {
@@ -131,13 +135,19 @@ export function restoreControlState(prefs) {
     }
   }
 
-  // Forecast days
-  if (prefs.gfsDays) {
-    document.getElementById('gfs-days').value = prefs.gfsDays;
-    document.getElementById('gfs-days-val').textContent = prefs.gfsDays;
+  // Model toggles and day sliders
+  if (prefs.modelToggles) {
+    for (const [modelId, enabled] of Object.entries(prefs.modelToggles)) {
+      const toggle = document.querySelector(`[data-model-toggle="${modelId}"]`);
+      if (toggle) toggle.checked = enabled;
+    }
   }
-  if (prefs.iconDays) {
-    document.getElementById('icon-days').value = prefs.iconDays;
-    document.getElementById('icon-days-val').textContent = prefs.iconDays;
+  if (prefs.modelDays) {
+    for (const [modelId, days] of Object.entries(prefs.modelDays)) {
+      const slider = document.querySelector(`[data-model-days="${modelId}"]`);
+      const valSpan = document.querySelector(`[data-model-days-val="${modelId}"]`);
+      if (slider) slider.value = days;
+      if (valSpan) valSpan.textContent = days;
+    }
   }
 }
