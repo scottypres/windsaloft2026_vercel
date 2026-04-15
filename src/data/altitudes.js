@@ -51,7 +51,7 @@ export function buildAltitudeRows(config) {
       windDirParam: `${config.windDirParamPrefix}${hPa}hPa`,
       tempParam: `temperature_${hPa}hPa`,
       cloudParam: `cloud_cover_${hPa}hPa`,
-      isHighAltitude: feet > 10000,
+      isHighAltitude: feet > 5000,
     });
   }
 
@@ -88,7 +88,7 @@ export function buildCloudAltitudeRows(config) {
       type: 'pressure',
       hPa,
       cloudParam: `cloud_cover_${hPa}hPa`,
-      isHighAltitude: feet > 10000,
+      isHighAltitude: feet > 5000,
     };
   });
   // Highest to lowest
