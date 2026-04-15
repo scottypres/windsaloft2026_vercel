@@ -491,19 +491,32 @@ body {
   width: fit-content;
 }
 
-/* === Column Highlight Overlay === */
-.col-highlight-overlay {
-  position: fixed;
+/* === Column Guide (per-table vertical lines + scroll snap) === */
+body.col-guide .table-section:not(.hidden):not(.empty) {
+  position: relative;
+}
+
+body.col-guide .table-section:not(.hidden):not(.empty)::after {
+  content: '';
+  position: absolute;
   top: 0;
   bottom: 0;
-  left: 50%;
+  left: calc(50% + var(--alt-width) / 2);
   transform: translateX(-50%);
   width: var(--cell-width);
-  background: rgba(255, 255, 255, 0.07);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
   pointer-events: none;
-  z-index: 10;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 5;
+}
+
+body.col-guide .table-container {
+  scroll-snap-type: x proximity;
+  scroll-padding-left: var(--alt-width);
+}
+
+body.col-guide .forecast-table th.hour-header {
+  scroll-snap-align: center;
 }
 
 /* === Tables === */

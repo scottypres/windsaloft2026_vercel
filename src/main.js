@@ -481,11 +481,10 @@ function initBottomSettings() {
     window.location.href = 'mai' + 'lto:' + u + '@' + d + '.' + t;
   });
 
-  // Column highlight overlay toggle
+  // Column guide toggle
   const colHighlightCheckbox = document.getElementById('col-highlight');
-  const colHighlightOverlay = document.getElementById('col-highlight-overlay');
   colHighlightCheckbox.addEventListener('change', () => {
-    colHighlightOverlay.classList.toggle('hidden', !colHighlightCheckbox.checked);
+    document.body.classList.toggle('col-guide', colHighlightCheckbox.checked);
   });
 
   // Wind color thresholds
