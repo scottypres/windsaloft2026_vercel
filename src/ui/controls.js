@@ -2,14 +2,31 @@ import { MODEL_ORDER } from '../data/models.js';
 
 // Wire up all settings controls
 export function initControls(callbacks) {
-  // View toggles in the header
-  const viewBtns = document.querySelectorAll('#header-view-toggles .view-btn');
-  viewBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      viewBtns.forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      callbacks.onViewChange(btn.dataset.view);
+  // View dropdown in the header
+  const viewDropdownBtn = document.getElementById('view-dropdown-btn');
+  const viewDropdownMenu = document.getElementById('view-dropdown-menu');
+  const viewItems = document.querySelectorAll('#view-dropdown-menu .view-dropdown-item');
+
+  const VIEW_LABELS = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble' };
+
+  viewDropdownBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    viewDropdownMenu.classList.toggle('hidden');
+  });
+
+  viewItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      viewItems.forEach((b) => b.classList.remove('active'));
+      item.classList.add('active');
+      viewDropdownBtn.childNodes[0].textContent = VIEW_LABELS[item.dataset.view] + ' ';
+      viewDropdownMenu.classList.add('hidden');
+      callbacks.onViewChange(item.dataset.view);
     });
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', () => {
+    viewDropdownMenu.classList.add('hidden');
   });
 
   // Filter checkboxes
@@ -104,10 +121,13 @@ function getSuppState() {
 export function restoreControlState(prefs) {
   if (!prefs) return;
 
-  // View
+  // View dropdown
   if (prefs.view) {
-    document.querySelectorAll('#header-view-toggles .view-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.view === prefs.view);
+    const labels = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble' };
+    const dropBtn = document.getElementById('view-dropdown-btn');
+    if (dropBtn) dropBtn.childNodes[0].textContent = (labels[prefs.view] || 'Wind') + ' ';
+    document.querySelectorAll('#view-dropdown-menu .view-dropdown-item').forEach((item) => {
+      item.classList.toggle('active', item.dataset.view === prefs.view);
     });
   }
 

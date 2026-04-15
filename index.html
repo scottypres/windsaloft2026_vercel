@@ -11,11 +11,14 @@
     <header class="app-header">
       <div class="header-row">
         <h1>Soar Forecaster</h1>
-        <div class="header-view-toggles" id="header-view-toggles">
-          <button class="view-btn active" data-view="wind">Wind</button>
-          <button class="view-btn" data-view="temp">Temp</button>
-          <button class="view-btn" data-view="clouds">Clouds</button>
-          <button class="view-btn" data-view="ensemble">Ensemble</button>
+        <div class="view-dropdown" id="view-dropdown">
+          <button class="view-dropdown-btn" id="view-dropdown-btn">Wind <span class="dropdown-caret">&#9662;</span></button>
+          <div class="view-dropdown-menu hidden" id="view-dropdown-menu">
+            <button class="view-dropdown-item active" data-view="wind">Wind</button>
+            <button class="view-dropdown-item" data-view="temp">Temp</button>
+            <button class="view-dropdown-item" data-view="clouds">Clouds</button>
+            <button class="view-dropdown-item" data-view="ensemble">Ensemble</button>
+          </div>
         </div>
         <button id="toggle-settings" class="toggle-settings-btn">Settings</button>
       </div>
