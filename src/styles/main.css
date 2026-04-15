@@ -427,19 +427,13 @@ body {
 }
 
 .table-container {
-  overflow: auto;
-  max-height: calc(50vh - 2rem);
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-surface);
   cursor: grab;
   -webkit-overflow-scrolling: touch;
-}
-
-/* When only one table is visible, give it more room */
-.table-section:only-child .table-container,
-.table-section:first-child:last-of-type:not(.empty) .table-container {
-  max-height: calc(100vh - 5rem);
 }
 
 .forecast-table {
