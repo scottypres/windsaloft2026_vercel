@@ -712,14 +712,20 @@ function init() {
     }
   }
 
+  function onGuideComplete() {
+    // Sync prefs with the UI state that endGuide() set
+    prefs.settingsVisible = false;
+    savePrefs(prefs);
+  }
+
   // Guide button
   document.getElementById('guide-btn').addEventListener('click', () => {
-    startGuide(guideAction);
+    startGuide(guideAction, onGuideComplete);
   });
 
   // Auto-start guide on first visit
   if (!hasSeenGuide()) {
-    startGuide(guideAction);
+    startGuide(guideAction, onGuideComplete);
   }
 }
 
