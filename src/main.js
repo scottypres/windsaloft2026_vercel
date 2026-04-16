@@ -3,7 +3,7 @@ import { transformWeatherData, transformEnsembleData } from './data/transform.js
 import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
-import { enableMomentumScroll } from './ui/momentum.js';
+import { enableMomentumScroll, setDragMultiplier } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
 import { windColor } from './data/colors.js';
@@ -471,6 +471,20 @@ function initBottomSettings() {
   });
   document.querySelector('.model-info-popup-backdrop').addEventListener('click', () => {
     modelInfoPopup.classList.add('hidden');
+  });
+
+  // Drag multiplier (scroll speed)
+  const dragSlider = document.getElementById('drag-multiplier');
+  const dragVal = document.getElementById('drag-multiplier-val');
+  dragSlider.value = prefs.dragMultiplier ?? 2;
+  dragVal.textContent = dragSlider.value;
+  setDragMultiplier(parseFloat(dragSlider.value));
+  dragSlider.addEventListener('input', () => {
+    const v = parseFloat(dragSlider.value);
+    dragVal.textContent = v % 1 === 0 ? v : v.toFixed(1);
+    setDragMultiplier(v);
+    prefs.dragMultiplier = v;
+    savePrefs(prefs);
   });
 
   // Contact button — email assembled at runtime to avoid scraping

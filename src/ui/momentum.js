@@ -1,5 +1,9 @@
 // Amplified drag scrolling - drags scroll faster than 1:1
-const DRAG_MULTIPLIER = 2;
+let dragMultiplier = 2;
+
+export function setDragMultiplier(value) {
+  dragMultiplier = value;
+}
 
 export function enableMomentumScroll(container) {
   let isDragging = false;
@@ -22,8 +26,8 @@ export function enableMomentumScroll(container) {
 
   window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
-    const dx = (e.clientX - startX) * DRAG_MULTIPLIER;
-    const dy = (e.clientY - startY) * DRAG_MULTIPLIER;
+    const dx = (e.clientX - startX) * dragMultiplier;
+    const dy = (e.clientY - startY) * dragMultiplier;
     container.scrollLeft = scrollLeftStart - dx;
     container.scrollTop = scrollTopStart - dy;
   });
@@ -66,8 +70,8 @@ export function enableMomentumScroll(container) {
       touchScrollTop = container.scrollTop;
       return;
     }
-    const dx = (e.touches[0].clientX - touchStartX) * DRAG_MULTIPLIER;
-    const dy = (e.touches[0].clientY - touchStartY) * DRAG_MULTIPLIER;
+    const dx = (e.touches[0].clientX - touchStartX) * dragMultiplier;
+    const dy = (e.touches[0].clientY - touchStartY) * dragMultiplier;
     container.scrollLeft = touchScrollLeft - dx;
     container.scrollTop = touchScrollTop - dy;
     e.preventDefault();
