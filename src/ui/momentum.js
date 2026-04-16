@@ -1,5 +1,5 @@
 // Amplified drag scrolling - drags scroll faster than 1:1
-let dragMultiplier = 2;
+let dragMultiplier = 1.4;
 
 export function setDragMultiplier(value) {
   dragMultiplier = value;

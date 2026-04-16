@@ -39,7 +39,7 @@ const DEFAULTS = {
   savedLocations: [],
   lastLocation: { lat: 26.68, lon: -80.25, shortName: 'Loxahatchee, FL', fullName: 'Loxahatchee, Palm Beach County, FL 33470, USA' },
   showAllLocations: false,
-  dragMultiplier: 2,
+  dragMultiplier: 1.4,
   settingsVisible: true,
   layout: {
     cellWidth: 18,

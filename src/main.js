@@ -476,7 +476,7 @@ function initBottomSettings() {
   // Drag multiplier (scroll speed)
   const dragSlider = document.getElementById('drag-multiplier');
   const dragVal = document.getElementById('drag-multiplier-val');
-  dragSlider.value = prefs.dragMultiplier ?? 2;
+  dragSlider.value = prefs.dragMultiplier ?? 1.4;
   dragVal.textContent = dragSlider.value;
   setDragMultiplier(parseFloat(dragSlider.value));
   dragSlider.addEventListener('input', () => {
@@ -485,6 +485,11 @@ function initBottomSettings() {
     setDragMultiplier(v);
     prefs.dragMultiplier = v;
     savePrefs(prefs);
+  });
+
+  document.getElementById('advanced-apply').addEventListener('click', () => {
+    savePrefs(prefs);
+    location.reload();
   });
 
   // Contact button — email assembled at runtime to avoid scraping
