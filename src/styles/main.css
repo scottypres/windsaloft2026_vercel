@@ -795,6 +795,7 @@ body {
 
 .bottom-settings-toggle-btn {
   padding: 0.3rem 0.9rem;
+  margin-right: 20px;
   background: #111;
   color: #fff;
   -webkit-text-fill-color: #fff;
