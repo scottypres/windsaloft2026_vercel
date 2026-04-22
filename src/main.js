@@ -1,4 +1,5 @@
 import { fetchModel, fetchEnsemble } from './api/weather.js';
+import { cacheGet, cacheKey, modelTTL } from './api/cache.js';
 import { transformWeatherData, transformEnsembleData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
@@ -112,6 +113,25 @@ function setEnsembleVisibility(visible) {
   document.querySelectorAll('.ensemble-section').forEach((section) => {
     section.classList.toggle('hidden', !visible);
   });
+}
+
+function shouldRefreshOnVisible(lat, lon) {
+  for (const id of MODEL_ORDER) {
+    if (!prefs.modelToggles[id]) continue;
+    const key = cacheKey(id, lat, lon, prefs.modelDays[id]);
+    const ttl = modelTTL(MODEL_CONFIGS[id]);
+    if (!cacheGet(key, ttl)) return true;
+  }
+  if (prefs.view === 'ensemble') {
+    const days = prefs.ensembleDays || 14;
+    const key = cacheKey('ensemble', lat, lon, days);
+    const ttl = modelTTL({
+      runSchedule: { type: 'fixed', hoursUTC: [0, 12] },
+      availabilityDelayMinutes: 420,
+    });
+    if (!cacheGet(key, ttl)) return true;
+  }
+  return false;
 }
 
 function rerender() {
@@ -748,6 +768,18 @@ function init() {
     prefs.settingsVisible = false;
     savePrefs(prefs);
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!prefs.lastLocation) return;
+    const { lat, lon } = prefs.lastLocation;
+    if (!shouldRefreshOnVisible(lat, lon)) return;
+    if (prefs.showAllLocations) {
+      renderAllLocations();
+    } else {
+      loadWeather(lat, lon);
+    }
+  });
 
   // Guide button
   document.getElementById('guide-btn').addEventListener('click', () => {
