@@ -120,7 +120,7 @@ export const MODEL_CONFIGS = {
     id: 'gfs_seamless',
     label: 'GFS',
     baseUrl: FORECAST_URL,
-    modelsParam: 'gfs_seamless',
+    modelsParam: 'gfs_global',
     maxDays: 14,
     defaultDays: 7,
     pressureLevels: [700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000],
