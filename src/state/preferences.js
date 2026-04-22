@@ -141,13 +141,16 @@ export function resetPrefs(preserveLocations = true) {
   return defaults;
 }
 
+export const MAX_SAVED_LOCATIONS = 6;
+
 export function addSavedLocation(prefs, location) {
   const exists = prefs.savedLocations.some(
     (l) => l.lat.toFixed(3) === location.lat.toFixed(3) && l.lon.toFixed(3) === location.lon.toFixed(3)
   );
   if (exists) return prefs;
+  if (prefs.savedLocations.length >= MAX_SAVED_LOCATIONS) return prefs;
 
-  prefs.savedLocations = [location, ...prefs.savedLocations].slice(0, 6);
+  prefs.savedLocations = [location, ...prefs.savedLocations];
   savePrefs(prefs);
   return prefs;
 }

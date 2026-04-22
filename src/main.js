@@ -16,6 +16,7 @@ import {
   getDefaultLayout,
   addSavedLocation,
   removeSavedLocation,
+  MAX_SAVED_LOCATIONS,
 } from './state/preferences.js';
 import './styles/main.css';
 
@@ -653,6 +654,10 @@ function init() {
       loadWeather(loc.lat, loc.lon);
     },
     onSaveLocation(loc) {
+      if (prefs.savedLocations.length >= MAX_SAVED_LOCATIONS) {
+        alert(`You can save up to ${MAX_SAVED_LOCATIONS} locations. Delete one before adding another.`);
+        return;
+      }
       prefs = addSavedLocation(prefs, loc);
       locationUI.renderSavedLocations(prefs.savedLocations);
     },
