@@ -318,14 +318,33 @@ async function renderAllLocations() {
 
   try {
     for (const loc of prefs.savedLocations) {
-      const raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
-      const data = transformWeatherData(raw, activeModel);
+      let modelUsed = activeModel;
+      let raw;
+      try {
+        raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
+      } catch (primaryErr) {
+        // HRRR has no coverage outside CONUS; fall back to ECMWF for that location.
+        if (activeModel !== 'hrrr') throw primaryErr;
+        try {
+          raw = await fetchModel('ecmwf', loc.lat, loc.lon, prefs.modelDays.ecmwf);
+          modelUsed = 'ecmwf';
+        } catch {
+          const errItem = document.createElement('div');
+          errItem.className = 'all-locations-item';
+          errItem.innerHTML = `<h3 class="location-header">${loc.shortName}</h3><div class="error">No data available</div>`;
+          firstContainer.appendChild(errItem);
+          continue;
+        }
+      }
+      const data = transformWeatherData(raw, modelUsed);
 
       const item = document.createElement('div');
       item.className = 'all-locations-item';
       const header = document.createElement('h3');
       header.className = 'location-header';
-      header.textContent = loc.shortName;
+      header.textContent = modelUsed === activeModel
+        ? loc.shortName
+        : `${loc.shortName} (${MODEL_CONFIGS[modelUsed].label})`;
       item.appendChild(header);
 
       const tableDiv = document.createElement('div');
