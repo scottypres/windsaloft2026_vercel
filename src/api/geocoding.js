@@ -59,19 +59,22 @@ export async function reverseGeocode(lat, lon) {
 }
 
 function buildShortName(result) {
+  const a = result.address || {};
+  const firstSegment = result.display_name?.split(',')[0]?.trim() || '';
+  // display_name's first segment disambiguates CDPs that lack city/town fields.
+  const place =
+    a.city || a.town || a.village || a.hamlet ||
+    a.municipality || a.suburb || a.neighbourhood ||
+    a.quarter || a.borough || a.city_district ||
+    result.name ||
+    firstSegment ||
+    a.county ||
+    '';
+  const state = a.state || '';
+  const country = a.country_code?.toUpperCase() || '';
   const parts = [];
-  if (result.address) {
-    const a = result.address;
-    const city = a.city || a.town || a.village || a.hamlet || a.county || '';
-    const state = a.state || '';
-    const country = a.country_code?.toUpperCase() || '';
-    if (city) parts.push(city);
-    if (state) parts.push(state);
-    if (country && country !== 'US') parts.push(country);
-  } else {
-    // Fallback: use first 2 parts of display_name
-    const segments = result.display_name.split(',').map((s) => s.trim());
-    parts.push(...segments.slice(0, 2));
-  }
-  return parts.join(', ') || result.display_name.split(',')[0];
+  if (place) parts.push(place);
+  if (state && state !== place) parts.push(state);
+  if (country && country !== 'US' && country !== place) parts.push(country);
+  return parts.join(', ') || firstSegment || result.display_name || '';
 }
