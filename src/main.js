@@ -690,9 +690,21 @@ function init() {
 
   initControls({
     onViewChange(view) {
+      if (view === 'all-locations') {
+        prefs.showAllLocations = true;
+        savePrefs(prefs);
+        renderAllLocations();
+        return;
+      }
+      const wasAllLocations = prefs.showAllLocations;
+      prefs.showAllLocations = false;
       prefs.view = view;
       savePrefs(prefs);
-      // If switching to ensemble view, fetch ensemble data if we have a location
+      // Returning from all-locations: single-location model data may be missing.
+      if (wasAllLocations && prefs.lastLocation) {
+        loadWeather(prefs.lastLocation.lat, prefs.lastLocation.lon);
+        return;
+      }
       if (view === 'ensemble' && !ensembleData && prefs.lastLocation) {
         loadEnsemble(prefs.lastLocation.lat, prefs.lastLocation.lon).then(() => rerender());
         return;
@@ -740,6 +752,7 @@ function init() {
       prefs.showAllLocations = !prefs.showAllLocations;
       savePrefs(prefs);
       hideLocationsPanel();
+      restoreControlState(prefs);
       if (prefs.showAllLocations) {
         renderAllLocations();
       } else {

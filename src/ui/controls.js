@@ -7,7 +7,7 @@ export function initControls(callbacks) {
   const viewDropdownMenu = document.getElementById('view-dropdown-menu');
   const viewItems = document.querySelectorAll('#view-dropdown-menu .view-dropdown-item');
 
-  const VIEW_LABELS = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble' };
+  const VIEW_LABELS = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble', 'all-locations': 'All Locations' };
 
   viewDropdownBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -122,12 +122,13 @@ export function restoreControlState(prefs) {
   if (!prefs) return;
 
   // View dropdown
-  if (prefs.view) {
-    const labels = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble' };
+  if (prefs.view || prefs.showAllLocations) {
+    const labels = { wind: 'Wind', temp: 'Temp', clouds: 'Clouds', ensemble: 'Ensemble', 'all-locations': 'All Locations' };
+    const activeKey = prefs.showAllLocations ? 'all-locations' : (prefs.view || 'wind');
     const dropBtn = document.getElementById('view-dropdown-btn');
-    if (dropBtn) dropBtn.childNodes[0].textContent = (labels[prefs.view] || 'Wind') + ' ';
+    if (dropBtn) dropBtn.childNodes[0].textContent = (labels[activeKey] || 'Wind') + ' ';
     document.querySelectorAll('#view-dropdown-menu .view-dropdown-item').forEach((item) => {
-      item.classList.toggle('active', item.dataset.view === prefs.view);
+      item.classList.toggle('active', item.dataset.view === activeKey);
     });
   }
 
