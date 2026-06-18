@@ -25,12 +25,13 @@ export function windColor(speed, thresholds = { calm: 7, moderate: 15, strong: 2
     const t = (speed - calm) / (moderate - calm);
     return rgb(lerp(blue, green, t));
   }
-  if (speed <= strong) {
-    const t = (speed - moderate) / (strong - moderate);
-    return rgb(lerp(green, yellow, t));
-  }
-  const t = Math.min(1, (speed - strong) / (strong * 0.5));
-  return rgb(lerp(yellow, red, t));
+  // At or above the "Red ≥" threshold the cell is solid red.
+  if (speed >= strong) return rgb(red);
+  // Between moderate and strong, ramp green → yellow → red so that red is
+  // reached exactly at `strong` (matching the "Red ≥" label and the spec).
+  const t = (speed - moderate) / (strong - moderate);
+  if (t < 0.5) return rgb(lerp(green, yellow, t * 2));
+  return rgb(lerp(yellow, red, (t - 0.5) * 2));
 }
 
 // Temperature color: white (≤32) → blue (32-55) → green (55-72) → red (72-90) → dark red (90+)
