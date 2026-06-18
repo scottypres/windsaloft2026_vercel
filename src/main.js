@@ -562,7 +562,9 @@ function updateWindGradient() {
   const preview = document.getElementById('wind-gradient-preview');
   if (!preview) return;
   const t = prefs.windThresholds;
-  const maxMph = Math.round(t.strong * 1.5);
+  // Use a stable scale (with headroom above the red threshold) so that editing
+  // the thresholds visibly moves the bands instead of rescaling around them.
+  const maxMph = Math.max(40, Math.round(t.strong * 1.25));
   const stops = [];
   for (let mph = 0; mph <= maxMph; mph++) {
     const pct = (mph / maxMph) * 100;
