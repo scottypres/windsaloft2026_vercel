@@ -53,6 +53,23 @@ export function modelTTL(config) {
   return MIN_TTL;
 }
 
+// True if a cached API response's hourly axis still starts on "today" in the
+// forecast location's timezone. Run-schedule TTLs can outlive the location's
+// midnight (especially for locations many hours ahead of the viewer), leaving
+// one model on yesterday's day grid while fresher models start today — which
+// shifts every day divider by a full day between stacked tables.
+export function startsOnLocationToday(data) {
+  const first = data?.hourly?.time?.[0];
+  const offsetSec = data?.utc_offset_seconds;
+  if (!first || offsetSec == null) return true; // can't tell — keep the cache
+  const local = new Date(Date.now() + offsetSec * 1000);
+  const today =
+    `${local.getUTCFullYear()}-` +
+    `${String(local.getUTCMonth() + 1).padStart(2, '0')}-` +
+    `${String(local.getUTCDate()).padStart(2, '0')}`;
+  return first.slice(0, 10) === today;
+}
+
 export function cacheGet(key, ttl) {
   try {
     const raw = localStorage.getItem(key);

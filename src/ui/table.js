@@ -27,13 +27,21 @@ export function renderTable(container, data, options = {}) {
     bestHoursThreshold = null,
     supplementaryRows = {},
     isEnsemble = false,
+    sharedDaylight = null,
   } = options;
 
   // Filter hours
   let hourIndices = data.hours.map((_, i) => i);
 
   if (showDaylightOnly) {
-    hourIndices = hourIndices.filter((i) => data.hours[i].isDay);
+    // Use the shared cross-model daylight mask when available so every table
+    // shows the same columns for the same timestamps (keeps day dividers
+    // aligned between stacked tables); fall back to this model's own flag.
+    hourIndices = hourIndices.filter((i) => {
+      const h = data.hours[i];
+      const shared = sharedDaylight ? sharedDaylight.get(h.time) : undefined;
+      return shared != null ? shared : h.isDay;
+    });
   }
 
   if (bestHoursThreshold != null) {
@@ -47,7 +55,10 @@ export function renderTable(container, data, options = {}) {
   }
 
   if (hourIndices.length === 0) {
-    container.innerHTML = `<div class="no-data">No hours match the current filters.</div>`;
+    const msg = data.hours.length === 0
+      ? 'No forecast data available for this location.'
+      : 'No hours match the current filters.';
+    container.innerHTML = `<div class="no-data">${msg}</div>`;
     return;
   }
 
@@ -104,12 +115,12 @@ export function renderTable(container, data, options = {}) {
     html.push(`<tr class="${surfaceClass}">`);
     html.push(`<td class="alt-label">${alt.label}</td>`);
 
-    for (const i of hourIndices) {
+    for (let j = 0; j < hourIndices.length; j++) {
+      const i = hourIndices[j];
       const h = data.hours[i];
       const dayClass = h.isDay ? 'day-col' : 'night-col';
       const boundary =
-        hourIndices.indexOf(i) > 0 &&
-        data.hours[hourIndices[hourIndices.indexOf(i) - 1]]?.dateLabel !== h.dateLabel
+        j > 0 && data.hours[hourIndices[j - 1]]?.dateLabel !== h.dateLabel
           ? ' day-boundary'
           : '';
 

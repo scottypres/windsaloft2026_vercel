@@ -6,6 +6,11 @@ export function setDragMultiplier(value) {
 }
 
 export function enableMomentumScroll(container) {
+  // Re-rendering calls this repeatedly on the same container; guard so we
+  // don't stack duplicate container + window listeners on every render.
+  if (container._momentumEnabled) return;
+  container._momentumEnabled = true;
+
   let isDragging = false;
   let startX, startY, scrollLeftStart, scrollTopStart;
 

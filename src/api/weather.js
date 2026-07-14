@@ -1,4 +1,4 @@
-import { cacheGet, cacheSet, cacheKey, modelTTL } from './cache.js';
+import { cacheGet, cacheSet, cacheKey, modelTTL, startsOnLocationToday } from './cache.js';
 import {
   MODEL_CONFIGS,
   ENSEMBLE_CONFIGS,
@@ -74,7 +74,7 @@ export async function fetchModel(modelId, lat, lon, days) {
   const ttl = modelTTL(config);
   const key = cacheKey(modelId, lat, lon, days);
   const cached = cacheGet(key, ttl);
-  if (cached) return cached;
+  if (cached && startsOnLocationToday(cached)) return cached;
 
   const allParams = buildHourlyParams(config);
   const url = buildUrl(config.baseUrl, config, lat, lon, allParams, days);
@@ -175,7 +175,7 @@ export async function fetchEnsemble(lat, lon, days = 14) {
     availabilityDelayMinutes: 420,
   });
   const cached = cacheGet(key, ttl);
-  if (cached) return cached;
+  if (cached && startsOnLocationToday(cached)) return cached;
 
   const hourlyParams = buildEnsembleHourlyParams();
   const query = {

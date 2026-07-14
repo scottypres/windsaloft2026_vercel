@@ -1,5 +1,5 @@
 import { fetchModel, fetchEnsemble } from './api/weather.js';
-import { cacheGet, cacheKey, modelTTL } from './api/cache.js';
+import { cacheGet, cacheKey, modelTTL, startsOnLocationToday } from './api/cache.js';
 import { transformWeatherData, transformEnsembleData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
 import { initControls, restoreControlState } from './ui/controls.js';
@@ -33,6 +33,25 @@ const MODEL_CONTAINER_IDS = {
   gfs_seamless: 'gfs-seamless-table',
   icon: 'icon-table',
 };
+
+// Union of the (extended) daylight flags across datasets, keyed by ISO time.
+// Each model computes is_day at its own grid cell, so sunrise/sunset can flip
+// across an hour boundary in one model but not another. Filtering each table
+// by its own mask then yields different column counts per day, so the thick
+// day-divider borders drift apart between stacked tables. A shared mask keeps
+// the visible columns identical wherever the tables cover the same hours.
+function buildSharedDaylightMask(datasets) {
+  const usable = datasets.filter((d) => d && d.hours.length);
+  if (usable.length < 2) return null;
+  const mask = new Map();
+  for (const d of usable) {
+    for (const h of d.hours) {
+      if (h.isDay) mask.set(h.time, true);
+      else if (!mask.has(h.time)) mask.set(h.time, false);
+    }
+  }
+  return mask;
+}
 
 function getTableOptions() {
   return {
@@ -121,7 +140,8 @@ function shouldRefreshOnVisible(lat, lon) {
     if (!prefs.modelToggles[id]) continue;
     const key = cacheKey(id, lat, lon, prefs.modelDays[id]);
     const ttl = modelTTL(MODEL_CONFIGS[id]);
-    if (!cacheGet(key, ttl)) return true;
+    const cached = cacheGet(key, ttl);
+    if (!cached || !startsOnLocationToday(cached)) return true;
   }
   if (prefs.view === 'ensemble') {
     const days = prefs.ensembleDays || 14;
@@ -130,7 +150,8 @@ function shouldRefreshOnVisible(lat, lon) {
       runSchedule: { type: 'fixed', hoursUTC: [0, 12] },
       availabilityDelayMinutes: 420,
     });
-    if (!cacheGet(key, ttl)) return true;
+    const cached = cacheGet(key, ttl);
+    if (!cached || !startsOnLocationToday(cached)) return true;
   }
   return false;
 }
@@ -154,15 +175,17 @@ function rerender() {
     // Render ensemble tables
     const gefsContainer = document.getElementById('gefs-table');
     const ecmwfEnsContainer = document.getElementById('ecmwf-ens-table');
+    const ensOpts = getTableOptions();
+    ensOpts.sharedDaylight = buildSharedDaylightMask([ensembleData?.gefs, ensembleData?.ecmwf_ens]);
 
     if (ensembleData?.gefs) {
-      renderTable(gefsContainer, ensembleData.gefs, getTableOptions());
+      renderTable(gefsContainer, ensembleData.gefs, ensOpts);
       enableMomentumScroll(gefsContainer);
     } else {
       gefsContainer.innerHTML = '<div class="no-data">Click a location to load ensemble data.</div>';
     }
     if (ensembleData?.ecmwf_ens) {
-      renderTable(ecmwfEnsContainer, ensembleData.ecmwf_ens, getTableOptions());
+      renderTable(ecmwfEnsContainer, ensembleData.ecmwf_ens, ensOpts);
       enableMomentumScroll(ecmwfEnsContainer);
     } else {
       ecmwfEnsContainer.innerHTML = '';
@@ -170,6 +193,9 @@ function rerender() {
   } else {
     // Render normal model tables
     const opts = getTableOptions();
+    opts.sharedDaylight = buildSharedDaylightMask(
+      MODEL_ORDER.filter((id) => prefs.modelToggles[id]).map((id) => modelData[id])
+    );
     for (const id of MODEL_ORDER) {
       const container = document.getElementById(MODEL_CONTAINER_IDS[id]);
       const section = document.querySelector(`.table-section[data-model="${id}"]`);
@@ -204,6 +230,14 @@ function rerender() {
   });
 }
 
+// Transform a raw API response, treating responses with no usable hours
+// (e.g. all-null arrays for a location outside a regional model's coverage)
+// as if the model were unavailable so its section hides cleanly.
+function toModelData(raw, modelId) {
+  const data = transformWeatherData(raw, modelId);
+  return data.hours.length > 0 ? data : null;
+}
+
 async function loadWeather(lat, lon) {
   const loading = document.getElementById('loading');
 
@@ -226,11 +260,7 @@ async function loadWeather(lat, lon) {
 
     const results = await Promise.all(promises);
     enabledModels.forEach((id, i) => {
-      if (results[i]) {
-        modelData[id] = transformWeatherData(results[i], id);
-      } else {
-        modelData[id] = null;
-      }
+      modelData[id] = results[i] ? toModelData(results[i], id) : null;
     });
 
     // If ensemble view is active, also fetch ensemble data
@@ -319,24 +349,31 @@ async function renderAllLocations() {
   try {
     for (const loc of prefs.savedLocations) {
       let modelUsed = activeModel;
-      let raw;
+      let data = null;
       try {
-        raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
-      } catch (primaryErr) {
-        // HRRR has no coverage outside CONUS; fall back to ECMWF for that location.
-        if (activeModel !== 'hrrr') throw primaryErr;
+        const raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
+        data = toModelData(raw, activeModel);
+      } catch {
+        data = null;
+      }
+      // Regional models (HRRR/NAM) have no coverage outside North America and
+      // can either error or return empty data; fall back to ECMWF per-location.
+      if (!data && activeModel !== 'ecmwf') {
         try {
-          raw = await fetchModel('ecmwf', loc.lat, loc.lon, prefs.modelDays.ecmwf);
+          const raw = await fetchModel('ecmwf', loc.lat, loc.lon, prefs.modelDays.ecmwf);
+          data = toModelData(raw, 'ecmwf');
           modelUsed = 'ecmwf';
         } catch {
-          const errItem = document.createElement('div');
-          errItem.className = 'all-locations-item';
-          errItem.innerHTML = `<h3 class="location-header">${loc.shortName}</h3><div class="error">No data available</div>`;
-          firstContainer.appendChild(errItem);
-          continue;
+          data = null;
         }
       }
-      const data = transformWeatherData(raw, modelUsed);
+      if (!data) {
+        const errItem = document.createElement('div');
+        errItem.className = 'all-locations-item';
+        errItem.innerHTML = `<h3 class="location-header">${loc.shortName}</h3><div class="error">No data available</div>`;
+        firstContainer.appendChild(errItem);
+        continue;
+      }
 
       const item = document.createElement('div');
       item.className = 'all-locations-item';
@@ -728,7 +765,7 @@ function init() {
       if (enabled && !modelData[modelId] && prefs.lastLocation) {
         fetchModel(modelId, prefs.lastLocation.lat, prefs.lastLocation.lon, prefs.modelDays[modelId])
           .then((raw) => {
-            modelData[modelId] = transformWeatherData(raw, modelId);
+            modelData[modelId] = toModelData(raw, modelId);
             rerender();
           })
           .catch((err) => console.error(`Failed to fetch ${modelId}:`, err));
@@ -742,7 +779,7 @@ function init() {
       if (prefs.lastLocation && prefs.modelToggles[modelId]) {
         fetchModel(modelId, prefs.lastLocation.lat, prefs.lastLocation.lon, days)
           .then((raw) => {
-            modelData[modelId] = transformWeatherData(raw, modelId);
+            modelData[modelId] = toModelData(raw, modelId);
             rerender();
           })
           .catch((err) => console.error(`Failed to fetch ${modelId}:`, err));
