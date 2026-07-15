@@ -575,6 +575,11 @@ body {
   border-right: 1px solid var(--border);
   white-space: nowrap;
   min-width: var(--alt-width);
+  /* Pin the label column to the same width in every table (long labels like
+     "4,921ft" vs "656ft" would otherwise shift whole tables sideways). */
+  max-width: var(--alt-width);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .supp-label {
@@ -612,6 +617,13 @@ body {
   min-width: var(--cell-width);
   height: var(--cell-height);
   position: relative;
+  /* Cap the cell's intrinsic-width contribution so wide content (e.g. a
+     "100%" supplementary value in a row only one model provides) can never
+     stretch that table's columns — column widths must stay identical across
+     stacked tables or the day dividers drift out of alignment. Widths are
+     driven by min-width and the (identical) header row instead. */
+  max-width: 0;
+  overflow: hidden;
 }
 
 .cell-value {
