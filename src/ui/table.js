@@ -14,6 +14,14 @@ import {
   spreadColor,
 } from '../data/colors.js';
 import { BEST_HOURS_MAX_FEET } from '../data/altitudes.js';
+import {
+  DEFAULT_UNITS,
+  WIND_UNIT_LABELS,
+  windTo,
+  tempTo,
+  tempDeltaTo,
+  altitudeLabel,
+} from '../data/units.js';
 
 // Render a full forecast table into a container element
 export function renderTable(container, data, options = {}) {
@@ -28,6 +36,7 @@ export function renderTable(container, data, options = {}) {
     supplementaryRows = {},
     isEnsemble = false,
     sharedDaylight = null,
+    units = DEFAULT_UNITS,
   } = options;
 
   // Filter hours
@@ -113,7 +122,7 @@ export function renderTable(container, data, options = {}) {
   for (const alt of altRows) {
     const surfaceClass = alt.key === '10m' ? ' surface-row' : '';
     html.push(`<tr class="${surfaceClass}">`);
-    html.push(`<td class="alt-label">${alt.label}</td>`);
+    html.push(`<td class="alt-label">${altitudeLabel(alt.feet, units.altitude)}</td>`);
 
     for (let j = 0; j < hourIndices.length; j++) {
       const i = hourIndices[j];
@@ -136,16 +145,18 @@ export function renderTable(container, data, options = {}) {
           bg = windColor(speed, windThresholds);
         }
         const color = textColorFor(bg);
-        const val = speed != null ? speed : '?';
+        const val = speed != null ? Math.round(windTo(speed, units.wind)) : '?';
         const arrow = windArrow(dir);
-        const title = isEnsemble && w?.spread != null ? ` title="\u00b1${w.spread} mph spread"` : '';
+        const title = isEnsemble && w?.spread != null
+          ? ` title="\u00b1${Math.round(windTo(w.spread, units.wind) * 10) / 10} ${WIND_UNIT_LABELS[units.wind]} spread"`
+          : '';
         html.push(
           `<td class="cell ${dayClass}${boundary}" style="background:${bg};color:${color}" data-alt="${alt.key}" data-hour="${i}"${title}>` +
             `<div class="cell-value">${val}</div>${arrow ? `<div class="cell-arrow">${arrow}</div>` : ''}</td>`
         );
       } else if (view === 'temp') {
         const t = alt.temp ? alt.temp[i] : null;
-        const val = t != null ? Math.round(t) : '?';
+        const val = t != null ? Math.round(tempTo(t, units.temp)) : '?';
         const bg = tempColor(t);
         const color = textColorFor(bg);
         html.push(
@@ -166,8 +177,8 @@ export function renderTable(container, data, options = {}) {
 
   // Supplementary rows
   if (view === 'wind' || view === 'clouds' || isEnsemble) {
-    const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble);
-    const fogLabels = new Set(['DP Spread', 'Temp °F', 'Vis (mi)']);
+    const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble, units);
+    const fogLabels = new Set(['DP Spread', `Temp °${units.temp}`, 'Vis (mi)']);
     for (const row of suppRows) {
       const promoted = row.label === 'Gusts' ? ' supp-row-promoted' : '';
       html.push(`<tr class="supp-row${promoted}">`);
@@ -210,7 +221,7 @@ export function renderTable(container, data, options = {}) {
   }
 }
 
-function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, isEnsemble) {
+function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, isEnsemble, units = DEFAULT_UNITS) {
   const rows = [];
   const s = data.surface;
 
@@ -228,7 +239,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.gusts) {
       rows.push(makeRow('Gusts', hourIndices, (i) => {
         const v = s.gusts[i];
-        const val = v != null ? Math.round(v) : '?';
+        const val = v != null ? Math.round(windTo(v, units.wind)) : '?';
         const { bg, color } = ensOrColor(s.gustsSpread, i, windColor(v, windThresholds));
         return { val, bg, color };
       }));
@@ -267,17 +278,17 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
       }));
     }
     if (shown.temp) {
-      rows.push(makeRow('Temp °F', hourIndices, (i) => {
+      rows.push(makeRow(`Temp °${units.temp}`, hourIndices, (i) => {
         const v = s.temp2m[i];
-        const val = v != null ? Math.round(v) : '?';
+        const val = v != null ? Math.round(tempTo(v, units.temp)) : '?';
         const { bg, color } = ensOrColor(s.temp2mSpread, i, tempColor(v));
         return { val, bg, color };
       }));
     }
     if (shown.humidity && s.humidity && s.humidity.length) {
-      rows.push(makeRow('Humidity', hourIndices, (i) => {
+      rows.push(makeRow('Humid %', hourIndices, (i) => {
         const v = s.humidity[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const { bg, color } = ensOrColor(s.humiditySpread, i, humidityColor(v));
         return { val, bg, color };
       }));
@@ -285,7 +296,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.dewpointSpread) {
       rows.push(makeRow('DP Spread', hourIndices, (i) => {
         const v = s.dewpointSpread[i];
-        const val = v != null ? `${v}°` : '?';
+        const val = v != null ? `${Math.round(tempDeltaTo(v, units.temp) * 10) / 10}°` : '?';
         const normalBg = v != null && v < 3 ? '#e74c3c' : v != null && v < 6 ? '#f0c040' : '#66bb6a';
         const { bg, color } = ensOrColor(s.dewpointSpreadSpread, i, normalBg);
         return { val, bg, color };
@@ -302,31 +313,31 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.cloudCover) {
       rows.push(makeRow('Clouds %', hourIndices, (i) => {
         const v = s.cloudCover[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const { bg, color } = ensOrColor(s.cloudCoverSpread, i, cloudColor(v));
         return { val, bg, color };
       }));
     }
     if (shown.cloudLow && s.cloudLow && s.cloudLow.length) {
-      rows.push(makeRow('Low Cld', hourIndices, (i) => {
+      rows.push(makeRow('Low Cld %', hourIndices, (i) => {
         const v = s.cloudLow[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const { bg, color } = ensOrColor(s.cloudLowSpread, i, cloudColor(v));
         return { val, bg, color };
       }));
     }
     if (shown.cloudMid && s.cloudMid && s.cloudMid.length) {
-      rows.push(makeRow('Mid Cld', hourIndices, (i) => {
+      rows.push(makeRow('Mid Cld %', hourIndices, (i) => {
         const v = s.cloudMid[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const { bg, color } = ensOrColor(s.cloudMidSpread, i, cloudColor(v));
         return { val, bg, color };
       }));
     }
     if (shown.cloudHigh && s.cloudHigh && s.cloudHigh.length) {
-      rows.push(makeRow('High Cld', hourIndices, (i) => {
+      rows.push(makeRow('High Cld %', hourIndices, (i) => {
         const v = s.cloudHigh[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const { bg, color } = ensOrColor(s.cloudHighSpread, i, cloudColor(v));
         return { val, bg, color };
       }));
@@ -337,7 +348,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.cloudHigh !== false && s.cloudHigh && s.cloudHigh.length) {
       rows.push(makeRow('High Clouds', hourIndices, (i) => {
         const v = s.cloudHigh[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const bg = cloudColor(v);
         return { val, bg, color: cloudTextColor(v) };
       }));
@@ -345,7 +356,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.cloudMid !== false && s.cloudMid && s.cloudMid.length) {
       rows.push(makeRow('Mid Clouds', hourIndices, (i) => {
         const v = s.cloudMid[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const bg = cloudColor(v);
         return { val, bg, color: cloudTextColor(v) };
       }));
@@ -353,7 +364,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.cloudLow !== false && s.cloudLow && s.cloudLow.length) {
       rows.push(makeRow('Low Clouds', hourIndices, (i) => {
         const v = s.cloudLow[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const bg = cloudColor(v);
         return { val, bg, color: cloudTextColor(v) };
       }));

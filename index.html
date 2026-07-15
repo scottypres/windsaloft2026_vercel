@@ -79,7 +79,7 @@
           <label class="toggle-label" id="fog-mode-label"><input type="checkbox" id="fog-mode"> Fog Mode</label>
           <label class="toggle-label" id="best-hours-label">
             <input type="checkbox" id="best-hours"> Best Hours
-            <input type="number" id="best-hours-threshold" value="15" min="1" max="50" class="small-input"> mph
+            <input type="number" id="best-hours-threshold" value="15" min="1" max="50" class="small-input"> <span id="best-hours-unit">mph</span>
           </label>
         </div>
       </div>
@@ -142,6 +142,33 @@
         <button class="section-header" id="open-layout-popup">Layout</button>
       </div>
 
+
+      <!-- Units Section -->
+      <div class="settings-section" id="section-units">
+        <button class="section-header" data-section="units">Units</button>
+        <div class="section-body">
+          <label class="inline-label">Wind
+            <select id="unit-wind" class="select-input">
+              <option value="mph">mph</option>
+              <option value="kmh">km/h</option>
+              <option value="kt">knots</option>
+              <option value="ms">m/s</option>
+            </select>
+          </label>
+          <label class="inline-label">Temp
+            <select id="unit-temp" class="select-input">
+              <option value="F">&deg;F</option>
+              <option value="C">&deg;C</option>
+            </select>
+          </label>
+          <label class="inline-label">Altitude
+            <select id="unit-alt" class="select-input">
+              <option value="ft">feet</option>
+              <option value="m">meters</option>
+            </select>
+          </label>
+        </div>
+      </div>
 
       <!-- Wind Colors Section -->
       <div class="settings-section" id="section-wind-colors">

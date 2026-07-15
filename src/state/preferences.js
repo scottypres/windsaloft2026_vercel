@@ -12,6 +12,7 @@ for (const id of MODEL_ORDER) {
 
 const DEFAULTS = {
   view: 'wind',
+  units: { wind: 'mph', temp: 'F', altitude: 'ft' },
   showDaylightOnly: true,
   hideHighAltitude: true,
   showWindShear: false,
@@ -82,6 +83,7 @@ export function loadPrefs() {
     const prefs = {
       ...DEFAULTS,
       ...saved,
+      units: { ...DEFAULTS.units, ...saved.units },
       windThresholds: { ...DEFAULTS.windThresholds, ...saved.windThresholds },
       modelToggles: { ...DEFAULT_TOGGLES, ...saved.modelToggles },
       modelDays,
@@ -102,6 +104,7 @@ export function loadPrefs() {
 function freshDefaults() {
   return {
     ...DEFAULTS,
+    units: { ...DEFAULTS.units },
     windThresholds: { ...DEFAULTS.windThresholds },
     modelToggles: { ...DEFAULT_TOGGLES },
     modelDays: { ...DEFAULT_DAYS },

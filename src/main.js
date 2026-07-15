@@ -8,6 +8,7 @@ import { enableMomentumScroll, setDragMultiplier } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
 import { windColor } from './data/colors.js';
+import { WIND_UNIT_LABELS, windTo, windFrom } from './data/units.js';
 import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
 import {
   loadPrefs,
@@ -64,6 +65,7 @@ function getTableOptions() {
     bestHoursThreshold: prefs.bestHoursThreshold,
     supplementaryRows: prefs.supplementaryRows,
     isEnsemble: prefs.view === 'ensemble',
+    units: prefs.units,
   };
 }
 
@@ -580,6 +582,9 @@ function initBottomSettings() {
   // Wind color thresholds
   initWindColorControls();
 
+  // Display units
+  initUnitControls();
+
   // Show panel, start with inner collapsed
   panel.classList.remove('hidden');
   inner.classList.add('hidden');
@@ -599,6 +604,7 @@ function updateWindGradient() {
   const preview = document.getElementById('wind-gradient-preview');
   if (!preview) return;
   const t = prefs.windThresholds;
+  const unit = prefs.units.wind;
   const maxMph = Math.round(t.strong * 1.5);
   const stops = [];
   for (let mph = 0; mph <= maxMph; mph++) {
@@ -611,10 +617,57 @@ function updateWindGradient() {
   const modPct = (t.moderate / maxMph) * 100;
   const strongPct = (t.strong / maxMph) * 100;
   preview.innerHTML = `<div class="gradient-labels">
-    <span style="left:${calmPct}%">${t.calm}</span>
-    <span style="left:${modPct}%">${t.moderate}</span>
-    <span style="left:${strongPct}%">${t.strong}</span>
+    <span style="left:${calmPct}%">${Math.round(windTo(t.calm, unit))}</span>
+    <span style="left:${modPct}%">${Math.round(windTo(t.moderate, unit))}</span>
+    <span style="left:${strongPct}%">${Math.round(windTo(t.strong, unit))}</span>
   </div>`;
+}
+
+// Rewrite the wind-unit-denominated inputs (color thresholds, Best Hours) in
+// the currently selected display unit. Canonical values always stay in mph.
+function refreshWindUnitInputs(previousWindUnit) {
+  const unit = prefs.units.wind;
+
+  const inputMaxMph = { 'wt-calm': 50, 'wt-moderate': 80, 'wt-strong': 100, 'best-hours-threshold': 50 };
+  for (const [id, maxMph] of Object.entries(inputMaxMph)) {
+    const el = document.getElementById(id);
+    if (el) el.max = Math.round(windTo(maxMph, unit));
+  }
+
+  document.getElementById('wt-calm').value = Math.round(windTo(prefs.windThresholds.calm, unit));
+  document.getElementById('wt-moderate').value = Math.round(windTo(prefs.windThresholds.moderate, unit));
+  document.getElementById('wt-strong').value = Math.round(windTo(prefs.windThresholds.strong, unit));
+
+  const bhInput = document.getElementById('best-hours-threshold');
+  // When Best Hours is inactive the input holds a display-unit value with no
+  // canonical copy in prefs, so re-express it via the previous unit.
+  const canonicalBh = prefs.bestHoursThreshold != null
+    ? prefs.bestHoursThreshold
+    : windFrom(parseFloat(bhInput.value) || 15, previousWindUnit || unit);
+  bhInput.value = Math.max(1, Math.round(windTo(canonicalBh, unit)));
+  document.getElementById('best-hours-unit').textContent = WIND_UNIT_LABELS[unit];
+
+  updateWindGradient();
+}
+
+function initUnitControls() {
+  const selects = {
+    'unit-wind': 'wind',
+    'unit-temp': 'temp',
+    'unit-alt': 'altitude',
+  };
+  for (const [id, key] of Object.entries(selects)) {
+    const el = document.getElementById(id);
+    if (prefs.units[key]) el.value = prefs.units[key];
+    el.addEventListener('change', () => {
+      const previousWindUnit = prefs.units.wind;
+      prefs.units[key] = el.value;
+      savePrefs(prefs);
+      if (key === 'wind') refreshWindUnitInputs(previousWindUnit);
+      rerender();
+    });
+  }
+  refreshWindUnitInputs(prefs.units.wind);
 }
 
 function initWindColorControls() {
@@ -627,11 +680,20 @@ function initWindColorControls() {
   strongInput.value = prefs.windThresholds.strong;
   updateWindGradient();
 
-  const readThresholds = () => ({
-    calm: parseInt(calmInput.value) || 7,
-    moderate: parseInt(modInput.value) || 15,
-    strong: parseInt(strongInput.value) || 20,
-  });
+  // Inputs are edited in the selected display unit; store canonical mph.
+  const readThresholds = () => {
+    const unit = prefs.units.wind;
+    const parse = (el, defMph) => {
+      const v = parseFloat(el.value);
+      if (!v || v <= 0) return defMph;
+      return Math.round(windFrom(v, unit) * 10) / 10;
+    };
+    return {
+      calm: parse(calmInput, 7),
+      moderate: parse(modInput, 15),
+      strong: parse(strongInput, 20),
+    };
+  };
 
   const onInput = () => {
     prefs.windThresholds = readThresholds();
@@ -749,6 +811,10 @@ function init() {
       rerender();
     },
     onToggle(key, value) {
+      // Best Hours is typed in the display unit; store canonical mph.
+      if (key === 'bestHoursThreshold' && value != null) {
+        value = Math.max(1, Math.round(windFrom(value, prefs.units.wind) * 10) / 10);
+      }
       prefs[key] = value;
       savePrefs(prefs);
       rerender();

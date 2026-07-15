@@ -1,4 +1,5 @@
 import { MODEL_ORDER } from '../data/models.js';
+import { windTo } from '../data/units.js';
 
 // Wire up all settings controls
 export function initControls(callbacks) {
@@ -144,10 +145,13 @@ export function restoreControlState(prefs) {
     if (el && prefs[key] != null) el.checked = prefs[key];
   }
 
-  // Best hours
+  // Best hours (threshold is stored in mph, displayed in the selected unit)
   if (prefs.bestHoursThreshold != null) {
     document.getElementById('best-hours').checked = true;
-    document.getElementById('best-hours-threshold').value = prefs.bestHoursThreshold;
+    document.getElementById('best-hours-threshold').value = Math.max(
+      1,
+      Math.round(windTo(prefs.bestHoursThreshold, prefs.units?.wind || 'mph'))
+    );
   }
 
   // Supplementary rows
