@@ -252,7 +252,7 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     if (shown.precipProb && s.precipProb) {
       rows.push(makeRow('Precip %', hourIndices, (i) => {
         const v = s.precipProb[i];
-        const val = v != null ? `${Math.round(v)}%` : '?';
+        const val = v != null ? `${Math.round(v)}` : '?';
         const bg = precipColor(v);
         return { val, bg, color: textColorFor(bg) };
       }));
