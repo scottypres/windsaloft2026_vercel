@@ -39,6 +39,12 @@ function buildHourlyParams(config) {
     params.push(`cloud_cover_${p}hPa`);
   }
 
+  // Geopotential height at pressure levels (labels the altitude rows with the
+  // model's actual heights). Treated as optional — see fetchModel's fallback.
+  for (const p of config.pressureLevels) {
+    params.push(`geopotential_height_${p}hPa`);
+  }
+
   // Extra hourly params (model-specific supplementary data)
   for (const p of (config.extraHourlyParams || [])) {
     if (!params.includes(p)) params.push(p);
@@ -88,8 +94,12 @@ export async function fetchModel(modelId, lat, lon, days) {
     }
     throw new Error(`HTTP ${resp.status}`);
   } catch (err) {
-    // Fallback: remove optional params if defined
-    const optional = config.optionalParams || [];
+    // Fallback: remove optional params if defined. Geopotential heights are
+    // always optional — a model that rejects them shouldn't lose everything.
+    const optional = [
+      ...(config.optionalParams || []),
+      ...config.pressureLevels.map((p) => `geopotential_height_${p}hPa`),
+    ];
     if (optional.length === 0) throw err;
 
     const reduced = allParams.filter((p) => !optional.includes(p));

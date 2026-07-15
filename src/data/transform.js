@@ -84,6 +84,25 @@ function buildHours(times, isDay, sunTimes) {
   });
 }
 
+// Height (feet) for an altitude row: prefer the model's actual geopotential
+// height (mean over the forecast period), falling back to the static
+// standard-atmosphere mapping when the model doesn't provide it.
+function effectiveFeet(row, hourly) {
+  const geo = row.geoParam ? hourly[row.geoParam] : null;
+  if (geo) {
+    let sum = 0;
+    let n = 0;
+    for (const v of geo) {
+      if (v != null) {
+        sum += v;
+        n++;
+      }
+    }
+    if (n > 0) return Math.round((sum / n) * 3.28084); // meters → feet
+  }
+  return row.feet;
+}
+
 function buildAltitudeData(altitudeRowDefs, hourly, numHours) {
   return altitudeRowDefs.map((row) => {
     const windSpeeds = hourly[row.windSpeedParam] || new Array(numHours).fill(null);
@@ -92,12 +111,13 @@ function buildAltitudeData(altitudeRowDefs, hourly, numHours) {
     const clouds = row.cloudParam
       ? hourly[row.cloudParam] || new Array(numHours).fill(null)
       : new Array(numHours).fill(null);
+    const feet = effectiveFeet(row, hourly);
 
     return {
       key: row.key,
-      feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
+      feet,
+      label: `${feet.toLocaleString()}ft`,
+      isHighAltitude: row.type === 'pressure' ? feet > 5000 : row.isHighAltitude,
       wind: windSpeeds.map((speed, i) => ({
         speed: speed != null ? Math.round(speed) : null,
         direction: windDirs[i],
@@ -169,11 +189,12 @@ export function transformWeatherData(raw, modelId) {
   const cloudRowDefs = buildCloudAltitudeRows(config);
   const cloudAltitudes = cloudRowDefs.map((row) => {
     const clouds = hourly[row.cloudParam] || new Array(times.length).fill(null);
+    const feet = effectiveFeet(row, hourly);
     return {
       key: row.key,
-      feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
+      feet,
+      label: `${feet.toLocaleString()}ft`,
+      isHighAltitude: feet > 5000,
       cloud: clouds,
     };
   });
