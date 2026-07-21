@@ -115,6 +115,55 @@ export async function fetchICON(lat, lon, days = 5) {
   return fetchModel('icon', lat, lon, days);
 }
 
+// --- Site elevation ---
+// Fetch the true ground elevation (metres) at an exact coordinate from
+// Open-Meteo's high-resolution DEM. This deliberately uses the real lat/lon
+// (e.g. a precise GPS fix) rather than any forecast model's smoothed grid-cell
+// terrain, so the "ground line" reflects the actual site — important where
+// nearby points differ by hundreds of metres (e.g. Mürren vs Lauterbrunnen).
+const ELEVATION_URL = 'https://api.open-meteo.com/v1/elevation';
+const ELEV_STORE_KEY = 'soar_elevations';
+const elevationMemo = new Map();
+
+function readElevStore() {
+  try {
+    return JSON.parse(localStorage.getItem(ELEV_STORE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function writeElevStore(store) {
+  try {
+    localStorage.setItem(ELEV_STORE_KEY, JSON.stringify(store));
+  } catch {
+    // localStorage full or unavailable — memo cache still serves this session
+  }
+}
+
+export async function fetchElevation(lat, lon) {
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+  if (elevationMemo.has(key)) return elevationMemo.get(key);
+
+  const store = readElevStore();
+  if (typeof store[key] === 'number') {
+    elevationMemo.set(key, store[key]);
+    return store[key];
+  }
+
+  const url = `${ELEVATION_URL}?latitude=${lat}&longitude=${lon}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Elevation API error: ${resp.status}`);
+  const data = await resp.json();
+  const meters = Array.isArray(data.elevation) ? data.elevation[0] : data.elevation;
+  if (typeof meters !== 'number') throw new Error('Elevation API returned no data');
+
+  elevationMemo.set(key, meters);
+  store[key] = meters;
+  writeElevStore(store);
+  return meters;
+}
+
 // Build ensemble hourly params — request params without suffixes;
 // the API automatically returns suffixed mean + member fields.
 function buildEnsembleHourlyParams() {

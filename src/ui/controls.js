@@ -35,6 +35,7 @@ export function initControls(callbacks) {
     'daylight-filter': 'showDaylightOnly',
     'hide-high-alt': 'hideHighAltitude',
     'wind-shear': 'showWindShear',
+    'ground-level': 'showGroundLevel',
   };
   for (const [id, key] of Object.entries(checkboxIds)) {
     document.getElementById(id).addEventListener('change', (e) => {
@@ -139,6 +140,7 @@ export function restoreControlState(prefs) {
     hideHighAltitude: 'hide-high-alt',
     showWindShear: 'wind-shear',
     showFogMode: 'fog-mode',
+    showGroundLevel: 'ground-level',
   };
   for (const [key, id] of Object.entries(checkboxMap)) {
     const el = document.getElementById(id);

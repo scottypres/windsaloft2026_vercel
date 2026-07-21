@@ -61,7 +61,11 @@ export function initLocationUI(container, callbacks) {
         gpsBtn.textContent = 'GPS';
         gpsBtn.disabled = false;
       },
-      { enableHighAccuracy: false, timeout: 10000 }
+      // Request the device's precise fix (GPS/GNSS rather than a coarse
+      // network/IP estimate) and never reuse a stale cached position, so the
+      // forecast and ground-line elevation resolve to the user's true spot —
+      // essential in terrain where a few hundred metres changes everything.
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 

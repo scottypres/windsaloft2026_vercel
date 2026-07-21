@@ -21,7 +21,13 @@ import {
   tempTo,
   tempDeltaTo,
   altitudeLabel,
+  aglLabel,
 } from '../data/units.js';
+
+// A pressure level within this many feet of the site elevation still counts as
+// "at ground" rather than underground — avoids greying a row that is basically
+// at the surface due to standard-atmosphere rounding.
+const GROUND_TOL_FEET = 30;
 
 // Render a full forecast table into a container element
 export function renderTable(container, data, options = {}) {
@@ -37,6 +43,8 @@ export function renderTable(container, data, options = {}) {
     isEnsemble = false,
     sharedDaylight = null,
     units = DEFAULT_UNITS,
+    showGroundLevel = false,
+    siteElevationFt = null,
   } = options;
 
   // Filter hours
@@ -86,6 +94,24 @@ export function renderTable(container, data, options = {}) {
     altRows = altRows.filter((a) => a.temp && a.temp.some((t) => t != null));
   }
 
+  // Ground-level (site elevation) mode: re-express every altitude on a single
+  // "height above your site" axis. Pressure levels are MSL, so their AGL is
+  // feet − siteElevation; the 10m/80m… surface rows are already AGL. We tag
+  // each row with its AGL, re-sort by it (so surface winds land at the ground
+  // line instead of being pinned to the bottom), and remember where the axis
+  // crosses zero so a ground marker and greyed sub-terrain rows can render.
+  const groundOn = showGroundLevel && siteElevationFt != null && altRows.length > 0;
+  let groundLineIndex = -1;
+  if (groundOn) {
+    altRows = altRows.map((a) => {
+      const isPressure = a.key.endsWith('hPa');
+      return { ...a, _agl: isPressure ? a.feet - siteElevationFt : a.feet, _pressure: isPressure };
+    });
+    altRows.sort((a, b) => b._agl - a._agl);
+    groundLineIndex = altRows.findIndex((a) => a._agl < -GROUND_TOL_FEET);
+    if (groundLineIndex === -1) groundLineIndex = altRows.length; // site below all levels
+  }
+
   const html = [];
   const headerLabel = data.modelLabel || data.model.toUpperCase();
 
@@ -119,10 +145,24 @@ export function renderTable(container, data, options = {}) {
   html.push('<tbody>');
 
   // Altitude rows
-  for (const alt of altRows) {
+  for (let ai = 0; ai < altRows.length; ai++) {
+    const alt = altRows[ai];
+
+    // Insert the ground marker just above the first sub-terrain row.
+    if (groundOn && ai === groundLineIndex) {
+      html.push(groundLineRow(siteElevationFt, units, hourIndices.length));
+    }
+
     const surfaceClass = alt.key === '10m' ? ' surface-row' : '';
-    html.push(`<tr class="${surfaceClass}">`);
-    html.push(`<td class="alt-label">${altitudeLabel(alt.feet, units.altitude)}</td>`);
+    const undergroundClass = groundOn && alt._agl < -GROUND_TOL_FEET ? ' below-ground' : '';
+    html.push(`<tr class="alt-data-row${surfaceClass}${undergroundClass}">`);
+    if (groundOn) {
+      html.push(
+        `<td class="alt-label" title="${alt.feet.toLocaleString()}ft MSL">${aglLabel(alt._agl, units.altitude)}</td>`
+      );
+    } else {
+      html.push(`<td class="alt-label">${altitudeLabel(alt.feet, units.altitude)}</td>`);
+    }
 
     for (let j = 0; j < hourIndices.length; j++) {
       const i = hourIndices[j];
@@ -175,6 +215,12 @@ export function renderTable(container, data, options = {}) {
     html.push('</tr>');
   }
 
+  // Site sits below every rendered level (e.g. a low, sea-level location):
+  // the ground line belongs at the very bottom, under the near-surface rows.
+  if (groundOn && groundLineIndex === altRows.length) {
+    html.push(groundLineRow(siteElevationFt, units, hourIndices.length));
+  }
+
   // Supplementary rows
   if (view === 'wind' || view === 'clouds' || isEnsemble) {
     const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble, units);
@@ -217,8 +263,23 @@ export function renderTable(container, data, options = {}) {
 
   // Post-render: wind shear detection
   if ((view === 'wind' || isEnsemble) && showWindShear) {
-    applyWindShear(container, data, altRows, hourIndices, hideHighAltitude);
+    applyWindShear(container, altRows, hourIndices);
   }
+}
+
+// Render the ground-line marker row: an earthy divider labeling the site's
+// true elevation, sitting between the above-ground and sub-terrain rows.
+function groundLineRow(siteElevationFt, units, numCols) {
+  const elev =
+    units.altitude === 'm'
+      ? `${Math.round(siteElevationFt * 0.3048).toLocaleString()} m`
+      : `${Math.round(siteElevationFt).toLocaleString()} ft`;
+  return (
+    '<tr class="ground-line-row">' +
+    '<td class="alt-label ground-line-label">Ground</td>' +
+    `<td class="ground-line-cell" colspan="${numCols}">▲ your site ≈ ${elev} MSL ▲</td>` +
+    '</tr>'
+  );
 }
 
 function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, isEnsemble, units = DEFAULT_UNITS) {
@@ -381,20 +442,19 @@ function makeRow(label, hourIndices, cellFn) {
   };
 }
 
-function applyWindShear(container, data, altRows, hourIndices, hideHighAltitude) {
-  const filteredAlts = hideHighAltitude
-    ? data.altitudes.filter((a) => !a.isHighAltitude)
-    : data.altitudes;
-
+function applyWindShear(container, altRows, hourIndices) {
   const table = container.querySelector('.forecast-table');
   if (!table) return;
-  const rows = table.querySelectorAll('tbody tr:not(.supp-row)');
+  // Select only altitude data rows (skips the ground-line marker and supp
+  // rows) so this NodeList stays index-aligned with altRows, even when
+  // ground-level mode has re-sorted the rows by height-above-ground.
+  const rows = table.querySelectorAll('tbody tr.alt-data-row');
 
   for (let colIdx = 0; colIdx < hourIndices.length; colIdx++) {
     const hi = hourIndices[colIdx];
-    for (let rowIdx = 0; rowIdx < filteredAlts.length - 1; rowIdx++) {
-      const upper = filteredAlts[rowIdx].wind[hi];
-      const lower = filteredAlts[rowIdx + 1].wind[hi];
+    for (let rowIdx = 0; rowIdx < altRows.length - 1; rowIdx++) {
+      const upper = altRows[rowIdx].wind[hi];
+      const lower = altRows[rowIdx + 1].wind[hi];
       if (!upper || !lower || upper.speed == null || lower.speed == null) continue;
 
       const speedDiff = Math.abs(upper.speed - lower.speed);

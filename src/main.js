@@ -1,4 +1,4 @@
-import { fetchModel, fetchEnsemble } from './api/weather.js';
+import { fetchModel, fetchEnsemble, fetchElevation } from './api/weather.js';
 import { cacheGet, cacheKey, modelTTL, startsOnLocationToday } from './api/cache.js';
 import { transformWeatherData, transformEnsembleData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
@@ -8,7 +8,7 @@ import { enableMomentumScroll, setDragMultiplier } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
 import { windColor } from './data/colors.js';
-import { WIND_UNIT_LABELS, windTo, windFrom } from './data/units.js';
+import { WIND_UNIT_LABELS, windTo, windFrom, metersToFeet } from './data/units.js';
 import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
 import {
   loadPrefs,
@@ -25,6 +25,7 @@ let prefs = loadPrefs();
 const modelData = {}; // { hrrr: transformedData, ecmwf: ..., ... }
 let ensembleData = null; // { gefs: transformedData, ecmwf_ens: transformedData }
 let locationUI = null;
+let currentSiteElevationFt = null; // true ground elevation of the active single location
 
 // Map model IDs to their table container DOM IDs
 const MODEL_CONTAINER_IDS = {
@@ -66,6 +67,8 @@ function getTableOptions() {
     supplementaryRows: prefs.supplementaryRows,
     isEnsemble: prefs.view === 'ensemble',
     units: prefs.units,
+    showGroundLevel: prefs.showGroundLevel,
+    siteElevationFt: currentSiteElevationFt,
   };
 }
 
@@ -250,6 +253,17 @@ async function loadWeather(lat, lon) {
   }
   loading.classList.remove('hidden');
 
+  // Resolve this location's true ground elevation for the ground-level overlay.
+  // Kicked off in parallel with the model fetches; best-effort (never fatal).
+  currentSiteElevationFt = null;
+  const elevPromise = fetchElevation(lat, lon)
+    .then((m) => {
+      currentSiteElevationFt = metersToFeet(m);
+    })
+    .catch(() => {
+      currentSiteElevationFt = null;
+    });
+
   try {
     // Fetch all enabled models in parallel
     const enabledModels = MODEL_ORDER.filter((id) => prefs.modelToggles[id]);
@@ -269,6 +283,10 @@ async function loadWeather(lat, lon) {
     if (prefs.view === 'ensemble') {
       await loadEnsemble(lat, lon);
     }
+
+    // Let the (usually cached/instant) elevation settle so the ground line is
+    // present on the first paint when the overlay is enabled.
+    await elevPromise;
 
     rerender();
   } catch (err) {
@@ -391,7 +409,19 @@ async function renderAllLocations() {
       item.appendChild(tableDiv);
       firstContainer.appendChild(item);
 
-      renderTable(tableDiv, data, getTableOptions());
+      // Each saved location has its own ground elevation; resolve it per-row so
+      // the overlay is correct across the All Locations view (best-effort).
+      const allOpts = getTableOptions();
+      allOpts.siteElevationFt = null;
+      if (prefs.showGroundLevel) {
+        try {
+          allOpts.siteElevationFt = metersToFeet(await fetchElevation(loc.lat, loc.lon));
+        } catch {
+          allOpts.siteElevationFt = null;
+        }
+      }
+
+      renderTable(tableDiv, data, allOpts);
       enableMomentumScroll(tableDiv);
     }
     setupAllLocationsScrollSync();
@@ -817,6 +847,23 @@ function init() {
       }
       prefs[key] = value;
       savePrefs(prefs);
+      // Enabling the ground overlay before an elevation was resolved (e.g. it
+      // failed earlier) — fetch it on demand for the current single location.
+      if (
+        key === 'showGroundLevel' &&
+        value &&
+        currentSiteElevationFt == null &&
+        prefs.lastLocation &&
+        !prefs.showAllLocations
+      ) {
+        fetchElevation(prefs.lastLocation.lat, prefs.lastLocation.lon)
+          .then((m) => {
+            currentSiteElevationFt = metersToFeet(m);
+            rerender();
+          })
+          .catch(() => rerender());
+        return;
+      }
       rerender();
     },
     onSuppChange(suppState) {
