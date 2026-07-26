@@ -95,15 +95,6 @@ export function capeColor(cape) {
   return rgb(lerp([230, 200, 50], [220, 50, 50], t));
 }
 
-// Lifted Index: blue (stable, ≥6) → red (unstable, ≤0)
-export function liftedIndexColor(li) {
-  if (li == null) return '#555';
-  if (li >= 6) return rgb([70, 130, 230]);
-  if (li <= 0) return rgb([220, 50, 50]);
-  const t = (6 - li) / 6;
-  return rgb(lerp([70, 130, 230], [220, 50, 50], t));
-}
-
 // Precipitation probability: white→dark blue
 export function precipColor(pct) {
   if (pct == null) return '#555';

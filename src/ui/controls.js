@@ -136,6 +136,22 @@ export function refreshHideAboveInput(prefs) {
   unitLabel.textContent = `k ${ALTITUDE_UNIT_LABELS[unit]}`;
 }
 
+// Open-Meteo's cloud layers are fixed altitude bands: low up to 3 km, mid
+// 3–8 km, high above 8 km. Shown in the settings labels only (never in the
+// table row headers) so the columns stay narrow. The docs say "altitude"
+// without specifying AGL or MSL, so no datum suffix is claimed here.
+const CLOUD_LAYER_RANGES = {
+  ft: { low: '(0-9.8 kft)', mid: '(9.8-26.2 kft)', high: '(>26.2 kft)' },
+  m: { low: '(0-3 km)', mid: '(3-8 km)', high: '(>8 km)' },
+};
+
+export function refreshCloudRangeLabels(prefs) {
+  const ranges = CLOUD_LAYER_RANGES[prefs.units?.altitude || 'ft'] || CLOUD_LAYER_RANGES.ft;
+  document.querySelectorAll('[data-cloud-range]').forEach((el) => {
+    el.textContent = ranges[el.dataset.cloudRange] || '';
+  });
+}
+
 function getSuppState() {
   const state = {};
   document.querySelectorAll('[data-supp]').forEach((cb) => {
@@ -174,6 +190,7 @@ export function restoreControlState(prefs) {
 
   // "Hide >" cutoff and its unit suffix
   refreshHideAboveInput(prefs);
+  refreshCloudRangeLabels(prefs);
 
   // Best hours (threshold is stored in mph, displayed in the selected unit)
   if (prefs.bestHoursThreshold != null) {

@@ -127,7 +127,6 @@ function buildSurface(hourly) {
   return {
     gusts: hourly.wind_gusts_10m || [],
     cape: hourly.cape || null,
-    liftedIndex: hourly.lifted_index || null,
     precipProb: hourly.precipitation_probability || null,
     precipInches: hourly.precipitation || null,
     // Also check rain + showers for models that use those instead
@@ -359,7 +358,6 @@ export function transformEnsembleData(raw, ensembleModelId) {
     gustsSpread: gustsData.spread,
     cape: capeData.mean.some((v) => v != null) ? capeData.mean : null,
     capeSpread: capeData.spread,
-    liftedIndex: null,
     precipProb: null,
     precipInches: null,
     rainInches: rainData.mean.some((v) => v != null) ? rainData.mean : null,

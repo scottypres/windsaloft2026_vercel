@@ -34,6 +34,22 @@
   --border-width: 0.5px;
   --day-border-width: 3px;
   --supp-font-size: 9px;
+
+  /* Grid lines between cells.
+     Drawn as inset box-shadows on each cell's right and bottom edge only —
+     never as a real `border`. With `box-sizing: border-box` a border ate into
+     the padding box, so raising --border-width squeezed the content and read
+     as padding while pushing neighbouring cells' borders apart. A box-shadow
+     is outside the layout entirely: cell geometry and content padding
+     (--cell-pad) stay put at any width. One line per shared edge also means
+     a cell's line IS its neighbour's line — perfectly overlapping, never
+     doubled.
+     --grid-color/--grid-width are plain inherited values so `.cell-borders`
+     can override them; the shadow itself is written out at each use site
+     because a var() nested in a custom property is substituted where that
+     property is declared, not where it is used. */
+  --grid-color: rgba(255, 255, 255, 0.05);
+  --grid-width: var(--border-width);
 }
 
 html {
@@ -316,6 +332,19 @@ body {
   font-size: 0.85rem;
 }
 
+/* Saved locations read as two lines: name, then indented coordinates. */
+.saved-name-line {
+  display: block;
+}
+
+.saved-coords-line {
+  display: block;
+  padding-left: 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .saved-name:hover {
   color: var(--accent);
 }
@@ -381,6 +410,13 @@ body {
   font-size: 0.8rem;
   cursor: pointer;
   white-space: nowrap;
+}
+
+/* Altitude band shown next to the cloud-layer toggles (settings only —
+   the table row headers stay short). */
+.cloud-range {
+  font-size: 0.7rem;
+  color: var(--text-muted);
 }
 
 .toggle-label input[type="checkbox"] {
@@ -612,8 +648,9 @@ body {
   text-align: center;
   font-weight: 600;
   font-size: var(--cell-font-size);
-  border-right: var(--border-width) solid rgba(255,255,255,0.05);
-  border-bottom: var(--border-width) solid rgba(255,255,255,0.05);
+  box-shadow:
+    inset calc(var(--grid-width) * -1) 0 0 0 var(--grid-color),
+    inset 0 calc(var(--grid-width) * -1) 0 0 var(--grid-color);
   min-width: var(--cell-width);
   height: var(--cell-height);
   position: relative;
@@ -645,10 +682,17 @@ body {
   margin: 0 auto;
 }
 
-/* Cell borders (toggled via JS) */
-.cell-borders .cell,
+/* Cell borders (toggled via JS) — same geometry, just a darker line. The
+   floor keeps a hairline visible when --border-width is dialled to 0. */
+.cell-borders {
+  --grid-color: rgba(0, 0, 0, 0.6);
+  --grid-width: max(0.5px, var(--border-width));
+}
+
 .cell-borders thead th {
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    inset calc(var(--grid-width) * -1) 0 0 0 var(--grid-color),
+    inset 0 calc(var(--grid-width) * -1) 0 0 var(--grid-color);
 }
 
 /* 33ft surface row separator */
@@ -691,10 +735,15 @@ body {
   border-left: var(--day-border-width) solid #000 !important;
 }
 
-/* Wind shear highlight */
+/* Wind shear highlight.
+   Offset by half the outline width so the line straddles the cell edge rather
+   than sitting fully inside it: two adjacent shear cells then draw the same
+   2px line in the same place instead of stacking two inset lines into a 4px
+   band. z-index (with .cell's position:relative) keeps it above the
+   backgrounds of non-shear neighbours. */
 .wind-shear {
   outline: 2px solid #ff6b00;
-  outline-offset: -2px;
+  outline-offset: -1px;
   z-index: 1;
 }
 
@@ -1131,6 +1180,11 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text);
+}
+
+.location-coords {
+  font-weight: 400;
+  color: var(--text-muted);
 }
 
 /* === Model Info Popup === */

@@ -5,7 +5,6 @@ import {
   cloudColor,
   cloudTextColor,
   capeColor,
-  liftedIndexColor,
   precipColor,
   precipInchesColor,
   humidityColor,
@@ -300,14 +299,6 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
         const val = v != null ? Math.round(v) : '?';
         const { bg, color } = ensOrColor(s.capeSpread, i, capeColor(v));
         return { val, bg, color };
-      }));
-    }
-    if (shown.liftedIndex && s.liftedIndex) {
-      rows.push(makeRow('Lift Idx', hourIndices, (i) => {
-        const v = s.liftedIndex[i];
-        const val = v != null ? v.toFixed(1) : '?';
-        const bg = liftedIndexColor(v);
-        return { val, bg, color: textColorFor(bg) };
       }));
     }
     if (shown.precipProb && s.precipProb) {

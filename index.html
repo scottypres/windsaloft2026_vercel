@@ -95,7 +95,6 @@
         <div class="section-body">
           <label class="toggle-label"><input type="checkbox" data-supp="gusts"> Gusts</label>
           <label class="toggle-label"><input type="checkbox" data-supp="cape"> CAPE</label>
-          <label class="toggle-label"><input type="checkbox" data-supp="liftedIndex"> Lift Index</label>
           <label class="toggle-label"><input type="checkbox" data-supp="precipProb"> Precip %</label>
           <label class="toggle-label"><input type="checkbox" data-supp="precipInches"> Precip in</label>
           <label class="toggle-label"><input type="checkbox" data-supp="temp"> Temp</label>
@@ -103,9 +102,9 @@
           <label class="toggle-label"><input type="checkbox" data-supp="dewpointSpread"> DP Spread</label>
           <label class="toggle-label"><input type="checkbox" data-supp="visibility"> Visibility</label>
           <label class="toggle-label"><input type="checkbox" data-supp="cloudCover"> Clouds</label>
-          <label class="toggle-label"><input type="checkbox" data-supp="cloudLow"> Low Cld</label>
-          <label class="toggle-label"><input type="checkbox" data-supp="cloudMid"> Mid Cld</label>
-          <label class="toggle-label"><input type="checkbox" data-supp="cloudHigh"> High Cld</label>
+          <label class="toggle-label"><input type="checkbox" data-supp="cloudLow"> Low Cld <span class="cloud-range" data-cloud-range="low"></span></label>
+          <label class="toggle-label"><input type="checkbox" data-supp="cloudMid"> Mid Cld <span class="cloud-range" data-cloud-range="mid"></span></label>
+          <label class="toggle-label"><input type="checkbox" data-supp="cloudHigh"> High Cld <span class="cloud-range" data-cloud-range="high"></span></label>
         </div>
       </div>
 
@@ -297,11 +296,11 @@
           <input type="range" id="layout-cell-height" min="8" max="50" value="28" class="range-input">
           <span id="layout-cell-height-val">28</span>
         </label>
-        <label class="inline-label">Hdr H
+        <label class="inline-label">Col Hdr H
           <input type="range" id="layout-header-height" min="10" max="70" value="42" class="range-input">
           <span id="layout-header-height-val">42</span>
         </label>
-        <label class="inline-label">Label W
+        <label class="inline-label">Row Hdr W
           <input type="range" id="layout-alt-width" min="10" max="100" value="60" class="range-input">
           <span id="layout-alt-width-val">60</span>
         </label>
@@ -317,7 +316,7 @@
           <input type="range" id="layout-cell-pad" min="0" max="6" value="2" class="range-input">
           <span id="layout-cell-pad-val">2</span>
         </label>
-        <label class="inline-label">Extra Font
+        <label class="inline-label">Extra Row Font
           <input type="range" id="layout-supp-font-size" min="4" max="14" value="9" class="range-input">
           <span id="layout-supp-font-size-val">9</span>
         </label>
@@ -338,7 +337,7 @@
             <option value="chevron">Chevron</option>
           </select>
         </label>
-        <label class="inline-label">Gap
+        <label class="inline-label">Table Gap
           <input type="range" id="layout-table-gap" min="0" max="24" value="8" class="range-input">
           <span id="layout-table-gap-val">8</span>
         </label>

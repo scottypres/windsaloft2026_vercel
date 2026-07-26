@@ -6,9 +6,10 @@ import {
   initControls,
   restoreControlState,
   refreshHideAboveInput,
+  refreshCloudRangeLabels,
   maxHideAboveThousands,
 } from './ui/controls.js';
-import { initLocationUI } from './ui/locations.js';
+import { initLocationUI, formatCoords, escapeHtml } from './ui/locations.js';
 import { enableMomentumScroll, setDragMultiplier } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
@@ -707,7 +708,10 @@ function initUnitControls() {
       prefs.units[key] = el.value;
       savePrefs(prefs);
       if (key === 'wind') refreshWindUnitInputs(previousWindUnit);
-      if (key === 'altitude') refreshHideAboveInput(prefs);
+      if (key === 'altitude') {
+        refreshHideAboveInput(prefs);
+        refreshCloudRangeLabels(prefs);
+      }
       rerender();
     });
   }
@@ -793,8 +797,12 @@ function init() {
   const locationBar = document.getElementById('current-location-bar');
 
   function updateLocationBar(loc) {
-    if (loc) locationBar.textContent = loc.shortName;
-    else locationBar.textContent = '';
+    if (!loc) {
+      locationBar.textContent = '';
+      return;
+    }
+    locationBar.innerHTML =
+      `${escapeHtml(loc.shortName)} <span class="location-coords">(${formatCoords(loc.lat, loc.lon)})</span>`;
   }
 
   function hideLocationsPanel() {

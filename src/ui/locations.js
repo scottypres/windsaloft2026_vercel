@@ -2,6 +2,20 @@ import { searchLocations, reverseGeocode } from '../api/geocoding.js';
 
 const MAX_SAVED = 6;
 
+// Coordinates are shown alongside every location name so two similarly-named
+// places stay tellable apart. 4 dp ≈ 11 m, finer than any model grid cell.
+export function formatCoords(lat, lon) {
+  if (lat == null || lon == null) return '';
+  return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+}
+
+// Place names come from the geocoding API, so escape before interpolating.
+export function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 export function initLocationUI(container, callbacks) {
   container.innerHTML = `
     <div class="location-panel">
@@ -84,7 +98,7 @@ export function initLocationUI(container, callbacks) {
       resultsDiv.innerHTML = results
         .map(
           (r, i) =>
-            `<div class="search-result" data-idx="${i}">${r.shortName}<span class="search-full">${r.name}</span></div>`
+            `<div class="search-result" data-idx="${i}">${escapeHtml(r.shortName)}<span class="search-full">${escapeHtml(r.name)}</span></div>`
         )
         .join('');
       resultsDiv.classList.remove('hidden');
@@ -138,7 +152,10 @@ export function initLocationUI(container, callbacks) {
         .map(
           (loc, i) =>
             `<li class="saved-item">
-              <span class="saved-name" data-idx="${i}">${loc.shortName}</span>
+              <span class="saved-name" data-idx="${i}">
+                <span class="saved-name-line">${escapeHtml(loc.shortName)}</span>
+                <span class="saved-coords-line">${formatCoords(loc.lat, loc.lon)}</span>
+              </span>
               <button class="delete-btn" data-idx="${i}">&times;</button>
             </li>`
         )

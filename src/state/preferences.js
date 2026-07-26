@@ -29,7 +29,6 @@ const DEFAULTS = {
   supplementaryRows: {
     gusts: true,
     cape: false,
-    liftedIndex: false,
     precipProb: false,
     precipInches: false,
     temp: true,
@@ -96,6 +95,14 @@ export function loadPrefs() {
       layout: { ...DEFAULTS.layout, ...saved.layout },
       savedLocations: saved.savedLocations || [],
     };
+
+    // Lifted Index was never actually requested from Open-Meteo — drop the
+    // dead key, and write the cleaned object straight back so it doesn't sit
+    // in localStorage until the user happens to change some other setting.
+    if ('liftedIndex' in prefs.supplementaryRows) {
+      delete prefs.supplementaryRows.liftedIndex;
+      savePrefs(prefs);
+    }
 
     // Always start on wind view after refresh
     if (prefs.view === 'ensemble') prefs.view = 'wind';

@@ -42,7 +42,6 @@ export const MODEL_CONFIGS = {
     windDirParamPrefix: 'wind_direction_',
     capabilities: {
       cape: true,
-      liftedIndex: false,
       precipProb: true,
       precipInches: false,
       humidity: true,
@@ -77,7 +76,6 @@ export const MODEL_CONFIGS = {
     windDirParamPrefix: 'wind_direction_',
     capabilities: {
       cape: true,
-      liftedIndex: false,
       precipProb: false,
       precipInches: true,
       humidity: false,
@@ -110,7 +108,6 @@ export const MODEL_CONFIGS = {
     windDirParamPrefix: 'wind_direction_',
     capabilities: {
       cape: true,
-      liftedIndex: false,
       precipProb: false,
       precipInches: false,
       humidity: true,
@@ -146,7 +143,6 @@ export const MODEL_CONFIGS = {
     windDirParamPrefix: 'wind_direction_',
     capabilities: {
       cape: true,
-      liftedIndex: false,
       precipProb: true,
       precipInches: false,
       humidity: true,
@@ -182,7 +178,6 @@ export const MODEL_CONFIGS = {
     windDirParamPrefix: 'winddirection_',
     capabilities: {
       cape: false,
-      liftedIndex: false,
       precipProb: false,
       precipInches: true,
       humidity: true,
