@@ -16,10 +16,14 @@ export function escapeHtml(str) {
   ));
 }
 
-export function initLocationUI(container, callbacks) {
+export function initLocationUI(container, callbacks, activeRegion = 'usa') {
   container.innerHTML = `
     <div class="location-panel">
       <div class="search-wrapper">
+        <div class="region-toggle" role="group" aria-label="Region">
+          <button type="button" class="region-btn" data-region="usa" aria-pressed="false">USA</button>
+          <button type="button" class="region-btn" data-region="europe" aria-pressed="false">Europe</button>
+        </div>
         <div class="search-row">
           <input type="text" id="location-search" placeholder="Search location..." autocomplete="off">
           <button id="gps-btn" class="gps-btn" title="Use current location">GPS</button>
@@ -42,8 +46,28 @@ export function initLocationUI(container, callbacks) {
   const resultsDiv = container.querySelector('#search-results');
   const saveBtn = container.querySelector('#save-location-btn');
   const gpsBtn = container.querySelector('#gps-btn');
+  const regionBtns = container.querySelectorAll('.region-btn');
 
   let currentLocation = null;
+
+  // Region segmented control: exactly one active at a time.
+  function markActiveRegion(region) {
+    regionBtns.forEach((btn) => {
+      const on = btn.dataset.region === region;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+  }
+  markActiveRegion(activeRegion);
+
+  regionBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const region = btn.dataset.region;
+      if (btn.classList.contains('active')) return;
+      markActiveRegion(region);
+      callbacks.onRegionChange(region);
+    });
+  });
 
   gpsBtn.addEventListener('click', () => {
     if (!navigator.geolocation) {

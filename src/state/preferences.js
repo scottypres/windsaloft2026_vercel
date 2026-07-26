@@ -2,6 +2,10 @@ import { MODEL_ORDER, MODEL_CONFIGS } from '../data/models.js';
 
 const PREFS_KEY = 'soar_preferences';
 
+export const REGIONS = ['usa', 'europe'];
+export const REGION_LABELS = { usa: 'USA', europe: 'Europe' };
+const DEFAULT_REGION = 'usa';
+
 // Build default toggles/days from model configs
 const DEFAULT_TOGGLES = {};
 const DEFAULT_DAYS = {};
@@ -10,6 +14,8 @@ for (const id of MODEL_ORDER) {
   DEFAULT_DAYS[id] = MODEL_CONFIGS[id].defaultDays;
 }
 
+// Everything a region owns. There are no cross-region settings other than
+// `activeRegion` itself — switching regions swaps this entire bundle.
 const DEFAULTS = {
   view: 'wind',
   units: { wind: 'mph', temp: 'F', altitude: 'ft' },
@@ -64,56 +70,37 @@ const DEFAULTS = {
   },
 };
 
-export function getDefaultLayout() {
-  return { ...DEFAULTS.layout };
+// Per-region overrides applied on top of DEFAULTS the first time a region is
+// used. After that the region keeps whatever the user sets, independent of
+// the other region.
+//
+// Units are display-only: requests stay hardcoded to fahrenheit/mph/inch in
+// weather.js because cacheKey() has no unit component, so making units affect
+// the request would serve wrong-unit data from cache and double the call count.
+// The conversion layer in data/units.js handles the rest.
+const REGION_OVERRIDES = {
+  usa: {},
+  europe: {
+    units: { wind: 'kmh', temp: 'C', altitude: 'm' },
+    lastLocation: {
+      lat: 46.6863,
+      lon: 7.8632,
+      shortName: 'Interlaken, Switzerland',
+      fullName: 'Interlaken, Verwaltungskreis Interlaken-Oberhasli, Bern, 3800, Switzerland',
+    },
+  },
+};
+
+function defaultProfile(region) {
+  const overrides = REGION_OVERRIDES[region] || {};
+  return {
+    ...deepCopyDefaults(),
+    ...overrides,
+    units: { ...DEFAULTS.units, ...overrides.units },
+  };
 }
 
-export function loadPrefs() {
-  try {
-    const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return freshDefaults();
-    const saved = JSON.parse(raw);
-
-    // Migrate old gfsDays/iconDays into modelDays
-    const modelDays = { ...DEFAULT_DAYS, ...saved.modelDays };
-    if (saved.gfsDays && !saved.modelDays?.gfs_seamless) {
-      modelDays.gfs_seamless = saved.gfsDays;
-    }
-    if (saved.iconDays && !saved.modelDays?.icon) {
-      modelDays.icon = saved.iconDays;
-    }
-
-    const prefs = {
-      ...DEFAULTS,
-      ...saved,
-      units: { ...DEFAULTS.units, ...saved.units },
-      hideAboveThousands: { ...DEFAULTS.hideAboveThousands, ...saved.hideAboveThousands },
-      windThresholds: { ...DEFAULTS.windThresholds, ...saved.windThresholds },
-      modelToggles: { ...DEFAULT_TOGGLES, ...saved.modelToggles },
-      modelDays,
-      supplementaryRows: { ...DEFAULTS.supplementaryRows, ...saved.supplementaryRows },
-      layout: { ...DEFAULTS.layout, ...saved.layout },
-      savedLocations: saved.savedLocations || [],
-    };
-
-    // Lifted Index was never actually requested from Open-Meteo — drop the
-    // dead key, and write the cleaned object straight back so it doesn't sit
-    // in localStorage until the user happens to change some other setting.
-    if ('liftedIndex' in prefs.supplementaryRows) {
-      delete prefs.supplementaryRows.liftedIndex;
-      savePrefs(prefs);
-    }
-
-    // Always start on wind view after refresh
-    if (prefs.view === 'ensemble') prefs.view = 'wind';
-
-    return prefs;
-  } catch {
-    return freshDefaults();
-  }
-}
-
-function freshDefaults() {
+function deepCopyDefaults() {
   return {
     ...DEFAULTS,
     units: { ...DEFAULTS.units },
@@ -127,34 +114,145 @@ function freshDefaults() {
   };
 }
 
-export function savePrefs(prefs) {
+export function getDefaultLayout() {
+  return { ...DEFAULTS.layout };
+}
+
+// Fill a saved profile out with anything the defaults have gained since it was
+// written, without clobbering what the user set.
+function hydrateProfile(saved, region) {
+  const base = defaultProfile(region);
+  if (!saved || typeof saved !== 'object') return base;
+
+  // Migrate old gfsDays/iconDays into modelDays
+  const modelDays = { ...base.modelDays, ...saved.modelDays };
+  if (saved.gfsDays && !saved.modelDays?.gfs_seamless) modelDays.gfs_seamless = saved.gfsDays;
+  if (saved.iconDays && !saved.modelDays?.icon) modelDays.icon = saved.iconDays;
+
+  const profile = {
+    ...base,
+    ...saved,
+    units: { ...base.units, ...saved.units },
+    hideAboveThousands: { ...base.hideAboveThousands, ...saved.hideAboveThousands },
+    windThresholds: { ...base.windThresholds, ...saved.windThresholds },
+    modelToggles: { ...base.modelToggles, ...saved.modelToggles },
+    modelDays,
+    supplementaryRows: { ...base.supplementaryRows, ...saved.supplementaryRows },
+    layout: { ...base.layout, ...saved.layout },
+    savedLocations: saved.savedLocations || [],
+  };
+
+  // Lifted Index was never actually requested from Open-Meteo — drop the
+  // dead key so it doesn't survive in saved prefs.
+  delete profile.supplementaryRows.liftedIndex;
+
+  // Always start on wind view after refresh
+  if (profile.view === 'ensemble') profile.view = 'wind';
+
+  return profile;
+}
+
+// The persisted shape: { activeRegion, profiles: { usa, europe } }. Cached at
+// module level so savePrefs() can write one region back without disturbing the
+// other. The rest of the app never sees this — it gets a flat prefs object.
+let store = null;
+
+function readStore() {
+  let saved = null;
   try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch {
+    saved = null;
+  }
+
+  if (!saved || typeof saved !== 'object') return freshStore();
+
+  if (saved.profiles) {
+    // Already region-shaped.
+    return {
+      activeRegion: REGIONS.includes(saved.activeRegion) ? saved.activeRegion : DEFAULT_REGION,
+      profiles: Object.fromEntries(
+        REGIONS.map((r) => [r, hydrateProfile(saved.profiles[r], r)])
+      ),
+    };
+  }
+
+  // Migration from the flat pre-region shape: everything the user had becomes
+  // the USA profile. Europe starts from its own defaults but inherits the
+  // user's tuned layout — cell sizes and fonts are a personal preference, not
+  // a regional one, so resetting them to stock would feel like a bug.
+  const usa = hydrateProfile(saved, 'usa');
+  const europe = defaultProfile('europe');
+  europe.layout = { ...usa.layout };
+  return { activeRegion: DEFAULT_REGION, profiles: { usa, europe } };
+}
+
+function freshStore() {
+  return {
+    activeRegion: DEFAULT_REGION,
+    profiles: Object.fromEntries(REGIONS.map((r) => [r, defaultProfile(r)])),
+  };
+}
+
+function writeStore() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(store));
   } catch {
     // localStorage unavailable
   }
 }
 
+// Flat view of the active region, plus which region it is. Every existing
+// `prefs.units`, `prefs.layout`, `prefs.modelToggles`… call site keeps working.
+function flatten() {
+  return { activeRegion: store.activeRegion, ...store.profiles[store.activeRegion] };
+}
+
+export function loadPrefs() {
+  store = readStore();
+  const prefs = flatten();
+  writeStore(); // persist migrations and any newly-seeded region
+  return prefs;
+}
+
+export function savePrefs(prefs) {
+  if (!store) store = readStore();
+  const region = REGIONS.includes(prefs.activeRegion) ? prefs.activeRegion : store.activeRegion;
+  const { activeRegion, ...profile } = prefs;
+  store.activeRegion = region;
+  store.profiles[region] = profile;
+  writeStore();
+}
+
+export function getActiveRegion() {
+  if (!store) store = readStore();
+  return store.activeRegion;
+}
+
+// Switch regions and return the new region's flat prefs. The caller is
+// expected to reload — see main.js.
+export function setActiveRegion(region) {
+  if (!REGIONS.includes(region)) return flatten();
+  if (!store) store = readStore();
+  store.activeRegion = region;
+  writeStore();
+  return flatten();
+}
+
 export function resetPrefs(preserveLocations = true) {
-  const defaults = freshDefaults();
-  if (preserveLocations) {
-    try {
-      const raw = localStorage.getItem(PREFS_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        defaults.savedLocations = saved.savedLocations || [];
-        defaults.lastLocation = saved.lastLocation || DEFAULTS.lastLocation;
-      }
-    } catch {
-      // ignore
-    }
+  if (!store) store = readStore();
+  const region = store.activeRegion;
+  const current = store.profiles[region];
+  const fresh = defaultProfile(region);
+  if (preserveLocations && current) {
+    fresh.savedLocations = current.savedLocations || [];
+    fresh.lastLocation = current.lastLocation || fresh.lastLocation;
   }
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(defaults));
-  } catch {
-    // ignore
-  }
-  return defaults;
+  // Reset only the active region — the other region's settings are untouched.
+  store.profiles[region] = fresh;
+  writeStore();
+  return flatten();
 }
 
 export const MAX_SAVED_LOCATIONS = 6;

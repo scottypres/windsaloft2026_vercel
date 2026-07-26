@@ -39,6 +39,34 @@ export function tempDeltaTo(f, unit) {
   return unit === 'C' ? (f * 5) / 9 : f;
 }
 
+// Precipitation and visibility have no unit setting of their own — there are
+// only three user-facing unit choices. Both follow the altitude unit, which is
+// the app's de-facto imperial/metric switch: someone reading heights in metres
+// wants millimetres and kilometres, not inches and miles. Canonical values stay
+// imperial (the API is asked for inches; transform.js converts visibility to
+// miles), so colour thresholds are unaffected — only the rendered number moves.
+export function isMetric(units) {
+  return (units?.altitude || 'ft') === 'm';
+}
+
+// canonical inches → display
+export function precipTo(inches, units) {
+  return isMetric(units) ? inches * 25.4 : inches;
+}
+
+export function precipLabel(units) {
+  return isMetric(units) ? 'Precip mm' : 'Precip in';
+}
+
+// canonical miles → display
+export function visibilityTo(miles, units) {
+  return isMetric(units) ? miles * 1.609344 : miles;
+}
+
+export function visibilityRowLabel(units) {
+  return isMetric(units) ? 'Vis (km)' : 'Vis (mi)';
+}
+
 export const ALTITUDE_UNIT_LABELS = { ft: 'ft', m: 'm' };
 
 export function altitudeLabel(feet, unit) {

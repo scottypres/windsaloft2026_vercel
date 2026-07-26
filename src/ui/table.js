@@ -21,6 +21,10 @@ import {
   tempDeltaTo,
   altitudeLabel,
   aglLabel,
+  precipTo,
+  precipLabel,
+  visibilityTo,
+  visibilityRowLabel,
 } from '../data/units.js';
 
 // A pressure level within this many feet of the site elevation still counts as
@@ -146,7 +150,7 @@ export function renderTable(container, data, options = {}) {
     html.push(`<tr class="alt-data-row${surfaceClass}">`);
     if (groundOn) {
       html.push(
-        `<td class="alt-label" title="${alt.feet.toLocaleString()}ft MSL">${aglLabel(alt._agl, units.altitude)}</td>`
+        `<td class="alt-label" title="${altitudeLabel(alt.feet, units.altitude)} MSL">${aglLabel(alt._agl, units.altitude)}</td>`
       );
     } else {
       html.push(`<td class="alt-label">${altitudeLabel(alt.feet, units.altitude)}</td>`);
@@ -212,7 +216,7 @@ export function renderTable(container, data, options = {}) {
   // Supplementary rows
   if (view === 'wind' || view === 'clouds' || isEnsemble) {
     const suppRows = buildSupplementaryRows(data, view, hourIndices, windThresholds, supplementaryRows, isEnsemble, units);
-    const fogLabels = new Set(['DP Spread', `Temp °${units.temp}`, 'Vis (mi)']);
+    const fogLabels = new Set(['DP Spread', `Temp °${units.temp}`, visibilityRowLabel(units)]);
     for (const row of suppRows) {
       const promoted = row.label === 'Gusts' ? ' supp-row-promoted' : '';
       html.push(`<tr class="supp-row${promoted}">`);
@@ -311,9 +315,9 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
     }
     if (shown.precipInches && (s.precipInches || s.rainInches)) {
       const src = s.precipInches || s.rainInches;
-      rows.push(makeRow('Precip in', hourIndices, (i) => {
+      rows.push(makeRow(precipLabel(units), hourIndices, (i) => {
         const v = src[i];
-        const val = v != null ? v.toFixed(2) : '?';
+        const val = v != null ? precipTo(v, units).toFixed(2) : '?';
         const { bg, color } = ensOrColor(s.rainSpread, i, precipInchesColor(v));
         return { val, bg, color };
       }));
@@ -344,9 +348,9 @@ function buildSupplementaryRows(data, view, hourIndices, windThresholds, shown, 
       }));
     }
     if (shown.visibility && s.visibility) {
-      rows.push(makeRow('Vis (mi)', hourIndices, (i) => {
+      rows.push(makeRow(visibilityRowLabel(units), hourIndices, (i) => {
         const v = s.visibility[i];
-        const val = v != null ? v.toFixed(1) : '?';
+        const val = v != null ? visibilityTo(v, units).toFixed(1) : '?';
         const { bg, color } = ensOrColor(s.visibilitySpread, i, visibilityColor(v));
         return { val, bg, color };
       }));

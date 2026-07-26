@@ -213,6 +213,47 @@ body {
   gap: 0.35rem;
 }
 
+/* Region segmented control — the two buttons share an edge, no gap. */
+.region-toggle {
+  display: flex;
+  margin-bottom: 0.4rem;
+}
+
+.region-btn {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.region-btn:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.region-btn:last-child {
+  border-radius: 0 4px 4px 0;
+  /* Collapse the shared edge so the pair reads as one control. */
+  margin-left: -1px;
+}
+
+.region-btn:hover {
+  color: var(--text);
+}
+
+.region-btn.active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  /* Keep the active button's border above its neighbour's. */
+  position: relative;
+  z-index: 1;
+}
+
 #location-search {
   flex: 1;
   padding: 0.5rem 0.75rem;

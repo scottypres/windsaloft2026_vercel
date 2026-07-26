@@ -20,6 +20,7 @@ import {
   loadPrefs,
   savePrefs,
   resetPrefs,
+  setActiveRegion,
   getDefaultLayout,
   addSavedLocation,
   removeSavedLocation,
@@ -815,6 +816,15 @@ function init() {
   }
 
   locationUI = initLocationUI(document.getElementById('location-panel'), {
+    // Switching regions swaps the entire preference bundle — units, layout,
+    // model toggles, saved locations, everything. Reloading re-runs init()
+    // against the new profile instead of hand-syncing every control, table and
+    // cached dataset back into agreement. Cached forecasts are keyed by
+    // location so nothing is refetched needlessly on the way back.
+    onRegionChange(region) {
+      setActiveRegion(region);
+      location.reload();
+    },
     onLocationSelect(loc) {
       prefs.lastLocation = loc;
       prefs.showAllLocations = false;
@@ -835,7 +845,7 @@ function init() {
       prefs = removeSavedLocation(prefs, idx);
       locationUI.renderSavedLocations(prefs.savedLocations);
     },
-  });
+  }, prefs.activeRegion);
 
   locationUI.renderSavedLocations(prefs.savedLocations);
 

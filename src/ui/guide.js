@@ -88,7 +88,7 @@ const STEPS = [
   },
   {
     title: 'Extra Rows',
-    text: 'Add supplementary data beneath each model table: Gusts, CAPE (convective energy), Precipitation %, Precipitation inches, Temperature, Humidity, Dew Point Spread, Visibility, and Cloud cover at low/mid/high levels. Toggle each one individually.',
+    text: 'Add supplementary data beneath each model table: Gusts, CAPE (convective energy), Precipitation %, Precipitation amount, Temperature, Humidity, Dew Point Spread, Visibility, and Cloud cover at low/mid/high levels. Toggle each one individually.',
     target: '#section-extra-rows',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-extra-rows .section-body',
