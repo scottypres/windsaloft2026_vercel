@@ -1,5 +1,13 @@
 import { MODEL_ORDER } from '../data/models.js';
-import { windTo } from '../data/units.js';
+import { ALTITUDE_UNIT_LABELS, windTo } from '../data/units.js';
+import { MAX_ROW_FEET } from '../data/altitudes.js';
+
+// Upper bound for the "Hide >" input, in thousands of each altitude unit —
+// no altitude row sits above this, so a higher cutoff would hide nothing.
+export function maxHideAboveThousands(unit) {
+  const max = unit === 'm' ? MAX_ROW_FEET * 0.3048 : MAX_ROW_FEET;
+  return Math.ceil(max / 1000);
+}
 
 // Wire up all settings controls
 export function initControls(callbacks) {
@@ -43,6 +51,10 @@ export function initControls(callbacks) {
     });
   }
 
+  // "Hide >" cutoff, typed in thousands of the selected altitude unit
+  document.getElementById('hide-high-alt-threshold').addEventListener('change', (e) => {
+    callbacks.onHideAboveChange(parseFloat(e.target.value));
+  });
   // Fog mode: auto-enable related supplementary rows
   document.getElementById('fog-mode').addEventListener('change', (e) => {
     callbacks.onToggle('showFogMode', e.target.checked);
@@ -111,6 +123,19 @@ export function initControls(callbacks) {
   });
 }
 
+// Show the "Hide >" cutoff for the currently selected altitude unit, with a
+// matching suffix ("k ft" / "k m") and bound.
+export function refreshHideAboveInput(prefs) {
+  const input = document.getElementById('hide-high-alt-threshold');
+  const unitLabel = document.getElementById('hide-high-alt-unit');
+  if (!input || !unitLabel) return;
+
+  const unit = prefs.units?.altitude || 'ft';
+  input.max = maxHideAboveThousands(unit);
+  input.value = prefs.hideAboveThousands?.[unit] ?? (unit === 'm' ? 3 : 5);
+  unitLabel.textContent = `k ${ALTITUDE_UNIT_LABELS[unit]}`;
+}
+
 function getSuppState() {
   const state = {};
   document.querySelectorAll('[data-supp]').forEach((cb) => {
@@ -146,6 +171,9 @@ export function restoreControlState(prefs) {
     const el = document.getElementById(id);
     if (el && prefs[key] != null) el.checked = prefs[key];
   }
+
+  // "Hide >" cutoff and its unit suffix
+  refreshHideAboveInput(prefs);
 
   // Best hours (threshold is stored in mph, displayed in the selected unit)
   if (prefs.bestHoursThreshold != null) {

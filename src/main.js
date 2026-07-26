@@ -2,13 +2,18 @@ import { fetchModel, fetchEnsemble, fetchElevation } from './api/weather.js';
 import { cacheGet, cacheKey, modelTTL, startsOnLocationToday } from './api/cache.js';
 import { transformWeatherData, transformEnsembleData } from './data/transform.js';
 import { renderTable } from './ui/table.js';
-import { initControls, restoreControlState } from './ui/controls.js';
+import {
+  initControls,
+  restoreControlState,
+  refreshHideAboveInput,
+  maxHideAboveThousands,
+} from './ui/controls.js';
 import { initLocationUI } from './ui/locations.js';
 import { enableMomentumScroll, setDragMultiplier } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
 import { windColor } from './data/colors.js';
-import { WIND_UNIT_LABELS, windTo, windFrom, metersToFeet } from './data/units.js';
+import { WIND_UNIT_LABELS, windTo, windFrom, metersToFeet, thousandsToFeet } from './data/units.js';
 import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
 import {
   loadPrefs,
@@ -55,12 +60,20 @@ function buildSharedDaylightMask(datasets) {
   return mask;
 }
 
+// The "Hide >" cutoff for the selected altitude unit, converted to feet.
+function hideAboveFeet() {
+  const unit = prefs.units.altitude || 'ft';
+  const thousands = prefs.hideAboveThousands?.[unit] ?? (unit === 'm' ? 3 : 5);
+  return thousandsToFeet(thousands, unit);
+}
+
 function getTableOptions() {
   return {
     view: prefs.view === 'ensemble' ? 'wind' : prefs.view,
     windThresholds: prefs.windThresholds,
     showDaylightOnly: prefs.showDaylightOnly,
     hideHighAltitude: prefs.hideHighAltitude,
+    hideAboveFeet: hideAboveFeet(),
     showWindShear: prefs.showWindShear,
     showFogMode: prefs.showFogMode,
     bestHoursThreshold: prefs.bestHoursThreshold,
@@ -694,6 +707,7 @@ function initUnitControls() {
       prefs.units[key] = el.value;
       savePrefs(prefs);
       if (key === 'wind') refreshWindUnitInputs(previousWindUnit);
+      if (key === 'altitude') refreshHideAboveInput(prefs);
       rerender();
     });
   }
@@ -864,6 +878,17 @@ function init() {
           .catch(() => rerender());
         return;
       }
+      rerender();
+    },
+    onHideAboveChange(value) {
+      const unit = prefs.units.altitude || 'ft';
+      const clamped = Math.min(
+        maxHideAboveThousands(unit),
+        Math.max(1, Math.round(value) || (unit === 'm' ? 3 : 5))
+      );
+      prefs.hideAboveThousands[unit] = clamped;
+      savePrefs(prefs);
+      refreshHideAboveInput(prefs);
       rerender();
     },
     onSuppChange(suppState) {

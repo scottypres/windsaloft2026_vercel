@@ -9,6 +9,18 @@ const ENSEMBLE_URL = 'https://ensemble-api.open-meteo.com/v1/ensemble';
 // Display order (top to bottom)
 export const MODEL_ORDER = ['hrrr', 'ecmwf', 'gfs_seamless', 'icon', 'nam'];
 
+// Pressure levels above 700 hPa (≈9,800 ft) — 25 hPa steps up to 500 hPa, then
+// coarser into the jet stream and stratosphere (100 hPa ≈ 53,000 ft).
+//
+// Coverage varies by model and Open-Meteo does not document it exhaustively, so
+// the same list is requested everywhere: levels a model lacks come back as
+// all-null arrays and those rows are dropped in transform.js. The whole set is
+// also registered as optional in weather.js, so a model that rejects the
+// parameters outright is retried with the core levels only.
+export const HIGH_PRESSURE_LEVELS = [
+  675, 650, 625, 600, 575, 550, 525, 500, 450, 400, 350, 300, 250, 200, 150, 100,
+];
+
 export const MODEL_CONFIGS = {
   hrrr: {
     id: 'hrrr',
@@ -19,8 +31,10 @@ export const MODEL_CONFIGS = {
     defaultDays: 3,
     // Pressure levels that actually return data (wind/temp/cloud)
     pressureLevels: [700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000],
-    // Cloud-specific pressure levels (same set for HRRR — no higher levels)
+    highPressureLevels: HIGH_PRESSURE_LEVELS,
+    // Cloud-specific pressure levels
     cloudPressureLevels: [700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000],
+    highCloudPressureLevels: HIGH_PRESSURE_LEVELS,
     // Surface meter levels with real wind data
     surfaceLevels: [10, 80],
     // Parameter naming: /v1/forecast?models= uses underscore style
@@ -124,7 +138,9 @@ export const MODEL_CONFIGS = {
     maxDays: 14,
     defaultDays: 7,
     pressureLevels: [700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000],
+    highPressureLevels: HIGH_PRESSURE_LEVELS,
     cloudPressureLevels: [700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000],
+    highCloudPressureLevels: HIGH_PRESSURE_LEVELS,
     surfaceLevels: [10, 80],
     windParamPrefix: 'wind_speed_',
     windDirParamPrefix: 'wind_direction_',
@@ -157,7 +173,9 @@ export const MODEL_CONFIGS = {
     maxDays: 7,
     defaultDays: 7,
     pressureLevels: [700, 800, 850, 900, 925, 950, 975, 1000],
+    highPressureLevels: HIGH_PRESSURE_LEVELS,
     cloudPressureLevels: [700, 800, 850, 900, 925, 950, 975, 1000],
+    highCloudPressureLevels: HIGH_PRESSURE_LEVELS,
     surfaceLevels: [10, 80, 180],
     // ICON dedicated endpoint uses NO underscore: windspeed_850hPa
     windParamPrefix: 'windspeed_',

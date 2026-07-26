@@ -657,15 +657,6 @@ body {
 }
 
 /* Ground-level (site elevation) overlay */
-.below-ground .alt-label,
-.below-ground .cell {
-  opacity: 0.3;
-}
-
-.below-ground .alt-label {
-  font-style: italic;
-}
-
 .ground-line-row td {
   padding: 0 var(--cell-pad);
   line-height: 1.3;
@@ -793,7 +784,8 @@ body {
   margin-bottom: 0.3rem;
 }
 
-.wind-threshold-row .small-input {
+.wind-threshold-row .small-input,
+#hide-high-alt-label .small-input {
   width: 3rem;
 }
 

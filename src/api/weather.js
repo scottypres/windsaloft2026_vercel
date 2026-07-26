@@ -4,12 +4,14 @@ import {
   ENSEMBLE_CONFIGS,
   ENSEMBLE_URL_BASE,
 } from '../data/models.js';
+import { allPressureLevels, allCloudPressureLevels } from '../data/altitudes.js';
 
 const DAILY_PARAMS = ['weather_code', 'sunrise', 'sunset', 'uv_index_max', 'precipitation_sum'];
 
 // Build the hourly parameter list for a given model config
 function buildHourlyParams(config) {
   const params = [];
+  const pressureLevels = allPressureLevels(config);
 
   // Surface wind params
   for (const m of config.surfaceLevels) {
@@ -18,7 +20,7 @@ function buildHourlyParams(config) {
   params.push('wind_gusts_10m');
 
   // Pressure level winds
-  for (const p of config.pressureLevels) {
+  for (const p of pressureLevels) {
     params.push(`${config.windParamPrefix}${p}hPa`);
     params.push(`${config.windDirParamPrefix}${p}hPa`);
   }
@@ -30,12 +32,12 @@ function buildHourlyParams(config) {
   }
 
   // Pressure level temperatures
-  for (const p of config.pressureLevels) {
+  for (const p of pressureLevels) {
     params.push(`temperature_${p}hPa`);
   }
 
   // Cloud cover at pressure levels
-  for (const p of (config.cloudPressureLevels || [])) {
+  for (const p of allCloudPressureLevels(config)) {
     params.push(`cloud_cover_${p}hPa`);
   }
 
@@ -45,6 +47,23 @@ function buildHourlyParams(config) {
   }
 
   return params;
+}
+
+// Params that may be rejected outright and can be dropped on a retry. The
+// high-altitude pressure levels are requested from every model even though
+// coverage varies; if a model 400s on them we fall back to the core levels
+// rather than losing the whole forecast.
+function optionalParamsFor(config) {
+  const optional = new Set(config.optionalParams || []);
+  for (const p of (config.highPressureLevels || [])) {
+    optional.add(`${config.windParamPrefix}${p}hPa`);
+    optional.add(`${config.windDirParamPrefix}${p}hPa`);
+    optional.add(`temperature_${p}hPa`);
+  }
+  for (const p of (config.highCloudPressureLevels || [])) {
+    optional.add(`cloud_cover_${p}hPa`);
+  }
+  return [...optional];
 }
 
 function buildUrl(baseUrl, config, lat, lon, hourlyParams, days) {
@@ -89,7 +108,7 @@ export async function fetchModel(modelId, lat, lon, days) {
     throw new Error(`HTTP ${resp.status}`);
   } catch (err) {
     // Fallback: remove optional params if defined
-    const optional = config.optionalParams || [];
+    const optional = optionalParamsFor(config);
     if (optional.length === 0) throw err;
 
     const reduced = allParams.filter((p) => !optional.includes(p));

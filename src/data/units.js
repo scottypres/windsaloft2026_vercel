@@ -39,6 +39,8 @@ export function tempDeltaTo(f, unit) {
   return unit === 'C' ? (f * 5) / 9 : f;
 }
 
+export const ALTITUDE_UNIT_LABELS = { ft: 'ft', m: 'm' };
+
 export function altitudeLabel(feet, unit) {
   if (unit === 'm') return `${Math.round(feet * 0.3048).toLocaleString()}m`;
   return `${feet.toLocaleString()}ft`;
@@ -47,6 +49,13 @@ export function altitudeLabel(feet, unit) {
 // metres → feet (site elevation from the DEM comes back in metres)
 export function metersToFeet(m) {
   return m / 0.3048;
+}
+
+// The "Hide >" filter is expressed in thousands of the selected altitude unit
+// (5 → 5k ft, 3 → 3k m). Altitude rows are stored in feet, so convert.
+export function thousandsToFeet(thousands, unit) {
+  const value = thousands * 1000;
+  return unit === 'm' ? metersToFeet(value) : value;
 }
 
 // Format a height-above-ground value for the ground-level overlay. Unlike

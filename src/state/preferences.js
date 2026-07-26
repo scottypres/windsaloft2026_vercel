@@ -15,6 +15,9 @@ const DEFAULTS = {
   units: { wind: 'mph', temp: 'F', altitude: 'ft' },
   showDaylightOnly: true,
   hideHighAltitude: true,
+  // "Hide >" cutoff in thousands of the selected altitude unit. Kept per unit
+  // so switching ft↔m lands on a round number instead of a converted fraction.
+  hideAboveThousands: { ft: 5, m: 3 },
   showWindShear: false,
   showFogMode: false,
   showGroundLevel: false,
@@ -85,6 +88,7 @@ export function loadPrefs() {
       ...DEFAULTS,
       ...saved,
       units: { ...DEFAULTS.units, ...saved.units },
+      hideAboveThousands: { ...DEFAULTS.hideAboveThousands, ...saved.hideAboveThousands },
       windThresholds: { ...DEFAULTS.windThresholds, ...saved.windThresholds },
       modelToggles: { ...DEFAULT_TOGGLES, ...saved.modelToggles },
       modelDays,
@@ -106,6 +110,7 @@ function freshDefaults() {
   return {
     ...DEFAULTS,
     units: { ...DEFAULTS.units },
+    hideAboveThousands: { ...DEFAULTS.hideAboveThousands },
     windThresholds: { ...DEFAULTS.windThresholds },
     modelToggles: { ...DEFAULT_TOGGLES },
     modelDays: { ...DEFAULT_DAYS },

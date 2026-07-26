@@ -36,6 +36,7 @@ export function renderTable(container, data, options = {}) {
     windThresholds = { calm: 7, moderate: 15, strong: 20 },
     showDaylightOnly = false,
     hideHighAltitude = false,
+    hideAboveFeet = 5000,
     showWindShear = false,
     showFogMode = false,
     bestHoursThreshold = null,
@@ -87,7 +88,7 @@ export function renderTable(container, data, options = {}) {
     altRows = data.altitudes;
   }
   if (hideHighAltitude) {
-    altRows = altRows.filter((a) => !a.isHighAltitude);
+    altRows = altRows.filter((a) => a.feet <= hideAboveFeet);
   }
   // In temp view, skip altitude rows where all temp values are null
   if (view === 'temp') {
@@ -98,18 +99,14 @@ export function renderTable(container, data, options = {}) {
   // "height above your site" axis. Pressure levels are MSL, so their AGL is
   // feet − siteElevation; the 10m/80m… surface rows are already AGL. We tag
   // each row with its AGL, re-sort by it (so surface winds land at the ground
-  // line instead of being pinned to the bottom), and remember where the axis
-  // crosses zero so a ground marker and greyed sub-terrain rows can render.
+  // line instead of being pinned to the bottom), then drop everything below the
+  // terrain — those levels are underground at this site and unflyable.
   const groundOn = showGroundLevel && siteElevationFt != null && altRows.length > 0;
-  let groundLineIndex = -1;
   if (groundOn) {
-    altRows = altRows.map((a) => {
-      const isPressure = a.key.endsWith('hPa');
-      return { ...a, _agl: isPressure ? a.feet - siteElevationFt : a.feet, _pressure: isPressure };
-    });
-    altRows.sort((a, b) => b._agl - a._agl);
-    groundLineIndex = altRows.findIndex((a) => a._agl < -GROUND_TOL_FEET);
-    if (groundLineIndex === -1) groundLineIndex = altRows.length; // site below all levels
+    altRows = altRows
+      .map((a) => ({ ...a, _agl: a.key.endsWith('hPa') ? a.feet - siteElevationFt : a.feet }))
+      .filter((a) => a._agl >= -GROUND_TOL_FEET)
+      .sort((a, b) => b._agl - a._agl);
   }
 
   const html = [];
@@ -145,17 +142,9 @@ export function renderTable(container, data, options = {}) {
   html.push('<tbody>');
 
   // Altitude rows
-  for (let ai = 0; ai < altRows.length; ai++) {
-    const alt = altRows[ai];
-
-    // Insert the ground marker just above the first sub-terrain row.
-    if (groundOn && ai === groundLineIndex) {
-      html.push(groundLineRow(siteElevationFt, units, hourIndices.length));
-    }
-
+  for (const alt of altRows) {
     const surfaceClass = alt.key === '10m' ? ' surface-row' : '';
-    const undergroundClass = groundOn && alt._agl < -GROUND_TOL_FEET ? ' below-ground' : '';
-    html.push(`<tr class="alt-data-row${surfaceClass}${undergroundClass}">`);
+    html.push(`<tr class="alt-data-row${surfaceClass}">`);
     if (groundOn) {
       html.push(
         `<td class="alt-label" title="${alt.feet.toLocaleString()}ft MSL">${aglLabel(alt._agl, units.altitude)}</td>`
@@ -215,9 +204,9 @@ export function renderTable(container, data, options = {}) {
     html.push('</tr>');
   }
 
-  // Site sits below every rendered level (e.g. a low, sea-level location):
-  // the ground line belongs at the very bottom, under the near-surface rows.
-  if (groundOn && groundLineIndex === altRows.length) {
+  // Everything underground has been filtered out, so the ground line closes
+  // out the altitude block.
+  if (groundOn) {
     html.push(groundLineRow(siteElevationFt, units, hourIndices.length));
   }
 

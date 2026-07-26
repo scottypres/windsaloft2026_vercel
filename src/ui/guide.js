@@ -60,7 +60,7 @@ const STEPS = [
   },
   {
     title: 'Filters',
-    text: 'Daylight Only hides nighttime hours to focus on flyable times. Hide >5k ft removes high-altitude rows. Wind Shear, Fog Mode, and Best Hours are explained in the next steps.',
+    text: 'Daylight Only hides nighttime hours to focus on flyable times. Hide &gt; removes every altitude row above the cutoff you type next to it — 5k ft by default, in whatever altitude unit you have selected. Wind Shear, Fog Mode, and Best Hours are explained in the next steps.',
     target: '#section-filters',
     requireVisible: '.bottom-settings-inner',
     requireExpanded: '#section-filters .section-body',

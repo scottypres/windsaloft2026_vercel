@@ -1,4 +1,5 @@
-// Pressure level to feet mapping
+// Pressure level to feet mapping. Levels Open-Meteo publishes an altitude for
+// use their documented value; the rest are standard-atmosphere heights.
 const PRESSURE_TO_FEET = {
   1000: 361,
   975: 1050,
@@ -13,14 +14,33 @@ const PRESSURE_TO_FEET = {
   750: 8091,
   725: 9052,
   700: 9843,
+  675: 10817,
+  650: 11780,
+  625: 12774,
   600: 13780,
+  575: 14862,
+  550: 15962,
+  525: 17103,
   500: 18373,
+  475: 19524,
+  450: 20812,
+  425: 22160,
   400: 23622,
+  375: 25062,
+  350: 26631,
+  325: 28295,
   300: 30184,
+  275: 31960,
   250: 34121,
+  225: 36211,
   200: 38714,
+  175: 41311,
   150: 44948,
+  125: 47768,
   100: 53150,
+  70: 57970,
+  50: 63395,
+  30: 70994,
 };
 
 // Surface meter levels to feet
@@ -33,13 +53,23 @@ const SURFACE_TO_FEET = {
   200: 656,
 };
 
+// Every pressure level a config asks for: the core set plus the optional
+// high-altitude extension (see models.js).
+export function allPressureLevels(config) {
+  return [...(config.pressureLevels || []), ...(config.highPressureLevels || [])];
+}
+
+export function allCloudPressureLevels(config) {
+  return [...(config.cloudPressureLevels || []), ...(config.highCloudPressureLevels || [])];
+}
+
 // Build altitude rows dynamically from a model config.
 // Returns rows ordered highest to lowest.
 export function buildAltitudeRows(config) {
   const rows = [];
 
   // Pressure level rows
-  for (const hPa of config.pressureLevels) {
+  for (const hPa of allPressureLevels(config)) {
     const feet = PRESSURE_TO_FEET[hPa];
     if (feet == null) continue;
     rows.push({
@@ -51,7 +81,6 @@ export function buildAltitudeRows(config) {
       windDirParam: `${config.windDirParamPrefix}${hPa}hPa`,
       tempParam: `temperature_${hPa}hPa`,
       cloudParam: `cloud_cover_${hPa}hPa`,
-      isHighAltitude: feet > 5000,
     });
   }
 
@@ -71,7 +100,6 @@ export function buildAltitudeRows(config) {
       windDirParam: `wind_direction_${meters}m`,
       tempParam: meters === 10 ? 'temperature_2m' : `temperature_${meters}m`,
       cloudParam: null,
-      isHighAltitude: false,
     }));
 
   return [...rows, ...surfaceRows];
@@ -79,18 +107,15 @@ export function buildAltitudeRows(config) {
 
 // Build cloud altitude rows from a model config.
 export function buildCloudAltitudeRows(config) {
-  const levels = config.cloudPressureLevels || [];
-  const rows = levels.map((hPa) => {
-    const feet = PRESSURE_TO_FEET[hPa];
-    return {
+  const rows = allCloudPressureLevels(config)
+    .filter((hPa) => PRESSURE_TO_FEET[hPa] != null)
+    .map((hPa) => ({
       key: `${hPa}hPa`,
-      feet,
+      feet: PRESSURE_TO_FEET[hPa],
       type: 'pressure',
       hPa,
       cloudParam: `cloud_cover_${hPa}hPa`,
-      isHighAltitude: feet > 5000,
-    };
-  });
+    }));
   // Highest to lowest
   rows.sort((a, b) => b.feet - a.feet);
   return rows;
@@ -98,5 +123,8 @@ export function buildCloudAltitudeRows(config) {
 
 // Maximum altitude (in feet) to check for "Best Hours" filter
 export const BEST_HOURS_MAX_FEET = 400;
+
+// Highest altitude any row can reach — bounds the "Hide >" threshold input.
+export const MAX_ROW_FEET = Math.max(...Object.values(PRESSURE_TO_FEET));
 
 export { PRESSURE_TO_FEET, SURFACE_TO_FEET };

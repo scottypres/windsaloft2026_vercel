@@ -96,8 +96,6 @@ function buildAltitudeData(altitudeRowDefs, hourly, numHours) {
     return {
       key: row.key,
       feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
       wind: windSpeeds.map((speed, i) => ({
         speed: speed != null ? Math.round(speed) : null,
         direction: windDirs[i],
@@ -107,6 +105,22 @@ function buildAltitudeData(altitudeRowDefs, hourly, numHours) {
       cloud: clouds,
     };
   });
+}
+
+const hasValue = (arr) => Array.isArray(arr) && arr.some((v) => v != null);
+
+// Every model is asked for the full high-altitude pressure set, so the ones a
+// model doesn't publish come back as all-null arrays. Drop those rows instead
+// of rendering a band of "?" cells. Surface levels are always kept — they carry
+// the hour trimming and the ground reference.
+function dropEmptyPressureRows(rows) {
+  return rows.filter(
+    (r) =>
+      !r.key.endsWith('hPa') ||
+      r.wind?.some((w) => w.speed != null) ||
+      hasValue(r.temp) ||
+      hasValue(r.cloud)
+  );
 }
 
 function buildSurface(hourly) {
@@ -164,19 +178,18 @@ export function transformWeatherData(raw, modelId) {
 
   const hours = buildHours(times, isDay, sunTimes);
   const altitudeRowDefs = buildAltitudeRows(config);
-  const altitudes = buildAltitudeData(altitudeRowDefs, hourly, times.length);
+  const altitudes = dropEmptyPressureRows(
+    buildAltitudeData(altitudeRowDefs, hourly, times.length)
+  );
 
   const cloudRowDefs = buildCloudAltitudeRows(config);
-  const cloudAltitudes = cloudRowDefs.map((row) => {
-    const clouds = hourly[row.cloudParam] || new Array(times.length).fill(null);
-    return {
+  const cloudAltitudes = cloudRowDefs
+    .map((row) => ({
       key: row.key,
       feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
-      cloud: clouds,
-    };
-  });
+      cloud: hourly[row.cloudParam] || new Array(times.length).fill(null),
+    }))
+    .filter((row) => hasValue(row.cloud));
 
   const surface = buildSurface(hourly);
 
@@ -286,7 +299,7 @@ export function transformEnsembleData(raw, ensembleModelId) {
   const altRowDefs = buildAltitudeRows(pseudoConfig);
 
   // Build altitude data with spread
-  const altitudes = altRowDefs.map((row) => {
+  const altitudes = dropEmptyPressureRows(altRowDefs.map((row) => {
     // The actual API field names have the ensemble suffix
     const speedBase = row.windSpeedParam; // e.g. wind_speed_850hPa
     const dirBase = row.windDirParam;
@@ -299,8 +312,6 @@ export function transformEnsembleData(raw, ensembleModelId) {
     return {
       key: row.key,
       feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
       wind: speedData.mean.map((speed, i) => ({
         speed: speed != null ? Math.round(speed) : null,
         direction: dirData.mean[i],
@@ -313,20 +324,17 @@ export function transformEnsembleData(raw, ensembleModelId) {
         ? (hourly[`${row.cloudParam}${suffix}`] || new Array(numHours).fill(null))
         : new Array(numHours).fill(null),
     };
-  });
+  }));
 
   // Cloud altitude rows
   const cloudRowDefs = buildCloudAltitudeRows(pseudoConfig);
-  const cloudAltitudes = cloudRowDefs.map((row) => {
-    const clouds = hourly[`${row.cloudParam}${suffix}`] || new Array(numHours).fill(null);
-    return {
+  const cloudAltitudes = cloudRowDefs
+    .map((row) => ({
       key: row.key,
       feet: row.feet,
-      label: `${row.feet.toLocaleString()}ft`,
-      isHighAltitude: row.isHighAltitude,
-      cloud: clouds,
-    };
-  });
+      cloud: hourly[`${row.cloudParam}${suffix}`] || new Array(numHours).fill(null),
+    }))
+    .filter((row) => hasValue(row.cloud));
 
   // Surface data from ensemble means + spread
   const sfms = (param) => extractEnsembleMeanAndSpread(hourly, param, suffix, mc, numHours);

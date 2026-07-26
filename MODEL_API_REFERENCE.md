@@ -315,6 +315,28 @@ visibility,cape
 
 This naming difference affects: HRRR, GFS Seamless, NBM, NAM, and ECMWF.
 
+## High-Altitude Pressure Levels
+
+The app requests the same extended set above 700 hPa from every pressure-capable
+model (`HIGH_PRESSURE_LEVELS` in `src/data/models.js`):
+
+```
+675, 650, 625, 600, 575, 550, 525, 500, 450, 400, 350, 300, 250, 200, 150, 100
+```
+
+Coverage above 700 hPa differs per model and Open-Meteo does not document it
+exhaustively, so the app is written to tolerate either failure mode:
+
+- Levels a model does not publish come back as all-null arrays. `transform.js`
+  drops any pressure row whose wind, temperature and cloud series are entirely
+  null, so those rows never reach the table.
+- If a model rejects the parameters outright, the whole extended set is
+  registered as optional in `weather.js` and the request is retried with the
+  core levels only.
+
+That makes the table self-adjusting: each model shows exactly the levels it
+actually has, up to 100 hPa (≈53,000 ft).
+
 ## Pressure Level Availability Summary
 
 | Level | GFS | ICON | ECMWF | HRRR | GFS Seamless | NBM | NAM |
