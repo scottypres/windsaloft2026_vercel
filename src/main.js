@@ -4,6 +4,7 @@ import { transformWeatherData, transformEnsembleData } from './data/transform.js
 import { renderTable } from './ui/table.js';
 import {
   initControls,
+  renderModelToggles,
   restoreControlState,
   refreshHideAboveInput,
   refreshCloudRangeLabels,
@@ -13,9 +14,15 @@ import { initLocationUI, formatCoords, escapeHtml } from './ui/locations.js';
 import { enableMomentumScroll, setDragMultiplier } from './ui/momentum.js';
 import { setArrowStyle, ARROW_STYLE_NAMES } from './ui/arrows.js';
 import { startGuide, hasSeenGuide } from './ui/guide.js';
+import { renderModelInfo } from './ui/modelInfo.js';
 import { windColor } from './data/colors.js';
 import { WIND_UNIT_LABELS, windTo, windFrom, metersToFeet, thousandsToFeet } from './data/units.js';
-import { MODEL_ORDER, MODEL_CONFIGS } from './data/models.js';
+import {
+  modelOrderFor,
+  modelLabelFor,
+  MODEL_CONFIGS,
+  ALL_LOCATIONS_FALLBACK,
+} from './data/models.js';
 import {
   loadPrefs,
   savePrefs,
@@ -29,19 +36,39 @@ import {
 import './styles/main.css';
 
 let prefs = loadPrefs();
+
+// The active region's model list. Switching regions reloads the page, so this
+// is settled for the lifetime of the module and every call site below can keep
+// treating it as a plain constant.
+const MODEL_ORDER = modelOrderFor(prefs.activeRegion);
+const modelLabel = (id) => modelLabelFor(id, prefs.activeRegion);
 const modelData = {}; // { hrrr: transformedData, ecmwf: ..., ... }
 let ensembleData = null; // { gefs: transformedData, ecmwf_ens: transformedData }
 let locationUI = null;
 let currentSiteElevationFt = null; // true ground elevation of the active single location
 
-// Map model IDs to their table container DOM IDs
-const MODEL_CONTAINER_IDS = {
-  hrrr: 'hrrr-table',
-  ecmwf: 'ecmwf-table',
-  nam: 'nam-table',
-  gfs_seamless: 'gfs-seamless-table',
-  icon: 'icon-table',
-};
+// Table sections are built from the active region's model list rather than
+// hardcoded in index.html — the two regions have different models, and the
+// order becomes user-editable in a later session.
+const MODEL_CONTAINER_IDS = Object.fromEntries(
+  MODEL_ORDER.map((id) => [id, `${id}-table`])
+);
+
+function buildModelSections() {
+  const wrapper = document.querySelector('.tables-wrapper');
+  const firstEnsemble = wrapper.querySelector('.ensemble-section');
+  for (const id of MODEL_ORDER) {
+    const section = document.createElement('div');
+    section.className = 'table-section';
+    section.dataset.model = id;
+    section.dataset.syncGroup = 'global';
+    const container = document.createElement('div');
+    container.id = MODEL_CONTAINER_IDS[id];
+    container.className = 'table-container';
+    section.appendChild(container);
+    wrapper.insertBefore(section, firstEnsemble);
+  }
+}
 
 // Union of the (extended) daylight flags across datasets, keyed by ISO time.
 // Each model computes is_day at its own grid cell, so sunrise/sunset can flip
@@ -255,7 +282,11 @@ function rerender() {
 // as if the model were unavailable so its section hides cleanly.
 function toModelData(raw, modelId) {
   const data = transformWeatherData(raw, modelId);
-  return data.hours.length > 0 ? data : null;
+  if (data.hours.length === 0) return null;
+  // One model is named differently per region (DWD's blend), so the label is
+  // resolved here rather than baked into the shared config.
+  data.modelLabel = modelLabel(modelId);
+  return data;
 }
 
 async function loadWeather(lat, lon) {
@@ -391,13 +422,15 @@ async function renderAllLocations() {
       } catch {
         data = null;
       }
-      // Regional models (HRRR/NAM) have no coverage outside North America and
-      // can either error or return empty data; fall back to ECMWF per-location.
-      if (!data && activeModel !== 'ecmwf') {
+      // Regional models have no coverage outside their own domain and can
+      // either error or return empty data; fall back to this region's global
+      // model per-location.
+      const fallback = ALL_LOCATIONS_FALLBACK[prefs.activeRegion];
+      if (!data && fallback && activeModel !== fallback) {
         try {
-          const raw = await fetchModel('ecmwf', loc.lat, loc.lon, prefs.modelDays.ecmwf);
-          data = toModelData(raw, 'ecmwf');
-          modelUsed = 'ecmwf';
+          const raw = await fetchModel(fallback, loc.lat, loc.lon, prefs.modelDays[fallback]);
+          data = toModelData(raw, fallback);
+          modelUsed = fallback;
         } catch {
           data = null;
         }
@@ -416,7 +449,7 @@ async function renderAllLocations() {
       header.className = 'location-header';
       header.textContent = modelUsed === activeModel
         ? loc.shortName
-        : `${loc.shortName} (${MODEL_CONFIGS[modelUsed].label})`;
+        : `${loc.shortName} (${modelLabel(modelUsed)})`;
       item.appendChild(header);
 
       const tableDiv = document.createElement('div');
@@ -792,6 +825,8 @@ function initSettingsToggle() {
 }
 
 function init() {
+  buildModelSections();
+  renderModelInfo(MODEL_ORDER, prefs.activeRegion);
   initSettingsToggle();
   initBottomSettings();
 
@@ -848,6 +883,8 @@ function init() {
   }, prefs.activeRegion);
 
   locationUI.renderSavedLocations(prefs.savedLocations);
+
+  renderModelToggles(prefs);
 
   initControls({
     onViewChange(view) {
@@ -956,7 +993,7 @@ function init() {
       prefs = resetPrefs();
       location.reload();
     },
-  });
+  }, prefs);
 
   restoreControlState(prefs);
 

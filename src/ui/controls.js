@@ -1,4 +1,4 @@
-import { MODEL_ORDER } from '../data/models.js';
+import { modelOrderFor, modelLabelFor, MODEL_CONFIGS } from '../data/models.js';
 import { ALTITUDE_UNIT_LABELS, windTo } from '../data/units.js';
 import { MAX_ROW_FEET } from '../data/altitudes.js';
 
@@ -9,8 +9,31 @@ export function maxHideAboveThousands(unit) {
   return Math.ceil(max / 1000);
 }
 
+// Build the per-model toggle rows for the active region. The two regions have
+// different model sets, so these are generated rather than written out in
+// index.html twice.
+export function renderModelToggles(prefs) {
+  const list = document.getElementById('model-toggle-list');
+  if (!list) return;
+  const region = prefs.activeRegion || 'usa';
+  list.innerHTML = modelOrderFor(region)
+    .map((id) => {
+      const config = MODEL_CONFIGS[id];
+      const days = prefs.modelDays?.[id] ?? config.defaultDays;
+      const on = prefs.modelToggles?.[id] ? ' checked' : '';
+      return (
+        `<label class="toggle-label model-toggle">` +
+        `<input type="checkbox" data-model-toggle="${id}"${on}> ${modelLabelFor(id, region)}` +
+        `<input type="range" data-model-days="${id}" min="1" max="${config.maxDays}" value="${days}" class="range-input">` +
+        `<span data-model-days-val="${id}">${days}</span>d` +
+        `</label>`
+      );
+    })
+    .join('');
+}
+
 // Wire up all settings controls
-export function initControls(callbacks) {
+export function initControls(callbacks, prefs) {
   // View dropdown in the header
   const viewDropdownBtn = document.getElementById('view-dropdown-btn');
   const viewDropdownMenu = document.getElementById('view-dropdown-menu');
@@ -89,8 +112,8 @@ export function initControls(callbacks) {
     });
   });
 
-  // Per-model toggles and day sliders
-  for (const modelId of MODEL_ORDER) {
+  // Per-model toggles and day sliders (rows are generated above)
+  for (const modelId of modelOrderFor(prefs?.activeRegion || 'usa')) {
     const toggle = document.querySelector(`[data-model-toggle="${modelId}"]`);
     const slider = document.querySelector(`[data-model-days="${modelId}"]`);
     const valSpan = document.querySelector(`[data-model-days-val="${modelId}"]`);

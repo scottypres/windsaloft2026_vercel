@@ -1,4 +1,4 @@
-import { buildAltitudeRows, buildCloudAltitudeRows } from './altitudes.js';
+import { buildAltitudeRows, buildCloudAltitudeRows, allPressureLevels } from './altitudes.js';
 import { MODEL_CONFIGS, ENSEMBLE_CONFIGS } from './models.js';
 
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -222,6 +222,10 @@ export function transformWeatherData(raw, modelId) {
   return {
     model: modelId,
     modelLabel: config.label,
+    // Several regional models (MeteoSwiss CH1/CH2/Seamless, AROME Austria,
+    // ECMWF IFS HRES) publish no pressure-level winds at all. The table says so
+    // rather than leaving a one-row model looking like a failed load.
+    hasPressureLevels: allPressureLevels(config).length > 0,
     timezone: raw.timezone || null,
     hours,
     altitudes,

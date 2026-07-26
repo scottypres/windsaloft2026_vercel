@@ -114,6 +114,13 @@ export function renderTable(container, data, options = {}) {
 
   const html = [];
   const headerLabel = data.modelLabel || data.model.toUpperCase();
+  // A model with no pressure levels can only ever draw its surface rows. Say
+  // so in the corner cell so a two-row table reads as a known limitation
+  // rather than a partial load.
+  const surfaceOnlyNote =
+    data.hasPressureLevels === false && !isEnsemble
+      ? '<div class="corner-note">surface only</div>'
+      : '';
 
   // For ensemble models, show label above the table
   if (isEnsemble) {
@@ -124,7 +131,9 @@ export function renderTable(container, data, options = {}) {
 
   // Header
   html.push('<thead><tr>');
-  html.push(`<th class="corner-cell">${isEnsemble ? '' : headerLabel}</th>`);
+  html.push(
+    `<th class="corner-cell">${isEnsemble ? '' : headerLabel}${surfaceOnlyNote}</th>`
+  );
   let prevDate = '';
   for (const i of hourIndices) {
     const h = data.hours[i];

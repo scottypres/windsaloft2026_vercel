@@ -1,4 +1,4 @@
-import { MODEL_ORDER, MODEL_CONFIGS } from '../data/models.js';
+import { modelOrderFor, MODEL_CONFIGS } from '../data/models.js';
 
 const PREFS_KEY = 'soar_preferences';
 
@@ -6,12 +6,27 @@ export const REGIONS = ['usa', 'europe'];
 export const REGION_LABELS = { usa: 'USA', europe: 'Europe' };
 const DEFAULT_REGION = 'usa';
 
-// Build default toggles/days from model configs
-const DEFAULT_TOGGLES = {};
-const DEFAULT_DAYS = {};
-for (const id of MODEL_ORDER) {
-  DEFAULT_TOGGLES[id] = true;
-  DEFAULT_DAYS[id] = MODEL_CONFIGS[id].defaultDays;
+// Which models start enabled in each region.
+//
+// Europe deliberately enables exactly one: a first Europe page load should fire
+// a single deterministic request. Every other model is present and toggleable,
+// just off. The USA region keeps its historical all-on behaviour.
+const DEFAULT_ENABLED = {
+  usa: null, // null = all models on
+  europe: new Set(['meteoswiss_seamless']),
+};
+
+function defaultToggles(region) {
+  const enabled = DEFAULT_ENABLED[region];
+  return Object.fromEntries(
+    modelOrderFor(region).map((id) => [id, enabled ? enabled.has(id) : true])
+  );
+}
+
+function defaultDays(region) {
+  return Object.fromEntries(
+    modelOrderFor(region).map((id) => [id, MODEL_CONFIGS[id].defaultDays])
+  );
 }
 
 // Everything a region owns. There are no cross-region settings other than
@@ -29,8 +44,9 @@ const DEFAULTS = {
   showGroundLevel: false,
   bestHoursThreshold: null,
   windThresholds: { calm: 7, moderate: 13, strong: 21 },
-  modelToggles: { ...DEFAULT_TOGGLES },
-  modelDays: { ...DEFAULT_DAYS },
+  // Replaced per region in defaultProfile().
+  modelToggles: {},
+  modelDays: {},
   ensembleDays: 14,
   supplementaryRows: {
     gusts: true,
@@ -82,6 +98,11 @@ const REGION_OVERRIDES = {
   usa: {},
   europe: {
     units: { wind: 'kmh', temp: 'C', altitude: 'm' },
+    // Europe's model names are long ("MeteoSwiss Seamless", "DWD ICON
+    // Seamless"), so the row-header column starts wider here — at the USA
+    // default of 45px they break mid-word in the table corner. Still a
+    // slider like every other layout value.
+    layout: { ...DEFAULTS.layout, altWidth: 62 },
     lastLocation: {
       lat: 46.6863,
       lon: 7.8632,
@@ -95,6 +116,8 @@ function defaultProfile(region) {
   const overrides = REGION_OVERRIDES[region] || {};
   return {
     ...deepCopyDefaults(),
+    modelToggles: defaultToggles(region),
+    modelDays: defaultDays(region),
     ...overrides,
     units: { ...DEFAULTS.units, ...overrides.units },
   };
@@ -106,8 +129,6 @@ function deepCopyDefaults() {
     units: { ...DEFAULTS.units },
     hideAboveThousands: { ...DEFAULTS.hideAboveThousands },
     windThresholds: { ...DEFAULTS.windThresholds },
-    modelToggles: { ...DEFAULT_TOGGLES },
-    modelDays: { ...DEFAULT_DAYS },
     supplementaryRows: { ...DEFAULTS.supplementaryRows },
     layout: { ...DEFAULTS.layout },
     savedLocations: [],
@@ -125,9 +146,23 @@ function hydrateProfile(saved, region) {
   if (!saved || typeof saved !== 'object') return base;
 
   // Migrate old gfsDays/iconDays into modelDays
-  const modelDays = { ...base.modelDays, ...saved.modelDays };
-  if (saved.gfsDays && !saved.modelDays?.gfs_seamless) modelDays.gfs_seamless = saved.gfsDays;
-  if (saved.iconDays && !saved.modelDays?.icon) modelDays.icon = saved.iconDays;
+  const merged = { ...base.modelDays, ...saved.modelDays };
+  if (saved.gfsDays && !saved.modelDays?.gfs_seamless) merged.gfs_seamless = saved.gfsDays;
+  if (saved.iconDays && !saved.modelDays?.icon) merged.icon = saved.iconDays;
+
+  // Keep only models this region actually has. A saved profile can carry keys
+  // for models the region no longer lists (or never did); leaving them in would
+  // let a stale toggle drive a fetch for a model with no row to render into.
+  const ids = modelOrderFor(region);
+  const modelDays = Object.fromEntries(ids.map((id) => [id, merged[id] ?? base.modelDays[id]]));
+  const modelToggles = Object.fromEntries(
+    ids.map((id) => [id, saved.modelToggles?.[id] ?? base.modelToggles[id]])
+  );
+  // Day counts must respect each model's real horizon.
+  for (const id of ids) {
+    const max = MODEL_CONFIGS[id]?.maxDays;
+    if (max != null) modelDays[id] = Math.min(modelDays[id] ?? max, max);
+  }
 
   const profile = {
     ...base,
@@ -135,7 +170,7 @@ function hydrateProfile(saved, region) {
     units: { ...base.units, ...saved.units },
     hideAboveThousands: { ...base.hideAboveThousands, ...saved.hideAboveThousands },
     windThresholds: { ...base.windThresholds, ...saved.windThresholds },
-    modelToggles: { ...base.modelToggles, ...saved.modelToggles },
+    modelToggles,
     modelDays,
     supplementaryRows: { ...base.supplementaryRows, ...saved.supplementaryRows },
     layout: { ...base.layout, ...saved.layout },

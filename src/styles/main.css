@@ -637,6 +637,19 @@ body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.1;
+  /* .forecast-table sets nowrap for the data cells; model names like
+     "MeteoSwiss Seamless" need to wrap instead of overflowing the corner. */
+  white-space: normal;
+  vertical-align: middle;
+}
+
+/* "surface only" caption under a model name with no pressure-level data. */
+.corner-note {
+  font-size: 0.8em;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-muted);
+  line-height: 1;
 }
 
 /* Sticky altitude label column */
