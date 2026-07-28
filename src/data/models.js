@@ -46,9 +46,15 @@ export function modelLabelFor(id, region) {
 }
 
 // Model used for the All Locations view when the chosen one has no data at a
-// given saved location — must have global coverage. Session 4 replaces this
-// with a user-facing selector.
+// given saved location — must have global coverage.
 export const ALL_LOCATIONS_FALLBACK = { usa: 'ecmwf', europe: 'ecmwf_ifs025' };
+
+// Which model the All Locations view starts on in each region.
+export const ALL_LOCATIONS_DEFAULT = { usa: 'hrrr', europe: 'meteoswiss_seamless' };
+
+// Ensembles are global products, so both regions get the same pair. Their
+// display order is stored separately from the deterministic models.
+export const ENSEMBLE_ORDER = ['gefs', 'ecmwf_ens'];
 
 // Pressure levels above 700 hPa (≈9,800 ft) — 25 hPa steps up to 500 hPa, then
 // coarser into the jet stream and stratosphere (100 hPa ≈ 53,000 ft).

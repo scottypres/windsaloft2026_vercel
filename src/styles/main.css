@@ -497,6 +497,65 @@ body {
   accent-color: var(--accent);
 }
 
+/* === Reorderable model rows === */
+.model-toggle {
+  gap: 0.3rem;
+}
+
+.model-toggle .model-name {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.model-toggle .model-note {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Three horizontal lines. touch-action: none stops the browser claiming the
+   gesture as a scroll before the drag handler sees it. */
+.drag-handle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  width: 14px;
+  padding: 4px 2px;
+  flex: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle span {
+  display: block;
+  height: 1.5px;
+  background: var(--text-muted);
+  border-radius: 1px;
+}
+
+.drag-handle:hover span {
+  background: var(--text);
+}
+
+.model-toggle.dragging {
+  background: var(--bg-surface);
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
+.model-toggle.dragging .drag-handle {
+  cursor: grabbing;
+}
+
+/* While a drag is in flight, don't let the pointer select label text. */
+#model-toggle-list.reordering {
+  user-select: none;
+}
+
 .action-btn {
   padding: 0.35rem 0.7rem;
   background: var(--bg-surface);

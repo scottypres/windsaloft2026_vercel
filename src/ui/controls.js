@@ -1,4 +1,11 @@
-import { modelOrderFor, modelLabelFor, MODEL_CONFIGS } from '../data/models.js';
+import {
+  modelOrderFor,
+  modelLabelFor,
+  MODEL_CONFIGS,
+  ENSEMBLE_CONFIGS,
+  ENSEMBLE_ORDER,
+} from '../data/models.js';
+import { makeReorderable, DRAG_HANDLE_HTML } from './reorder.js';
 import { ALTITUDE_UNIT_LABELS, windTo } from '../data/units.js';
 import { MAX_ROW_FEET } from '../data/altitudes.js';
 
@@ -9,27 +16,86 @@ export function maxHideAboveThousands(unit) {
   return Math.ceil(max / 1000);
 }
 
-// Build the per-model toggle rows for the active region. The two regions have
-// different model sets, so these are generated rather than written out in
-// index.html twice.
+// The order the models are listed and drawn in, for the active region.
+export function orderedModels(prefs) {
+  const region = prefs.activeRegion || 'usa';
+  const saved = Array.isArray(prefs.modelOrder) ? prefs.modelOrder : [];
+  const valid = modelOrderFor(region);
+  return saved.length ? saved.filter((id) => valid.includes(id)) : [...valid];
+}
+
+export function orderedEnsembles(prefs) {
+  const saved = Array.isArray(prefs.ensembleOrder) ? prefs.ensembleOrder : [];
+  return saved.length ? saved.filter((id) => ENSEMBLE_ORDER.includes(id)) : [...ENSEMBLE_ORDER];
+}
+
+// Build the model rows for the active region. The two regions have different
+// model sets and the order is user-editable, so these are generated rather
+// than written out in index.html.
+//
+// In the ensemble view the same list shows the ensemble models instead — they
+// are what is on screen, so they are what the dropdown should let you reorder.
+// Ensembles carry no per-model toggle or day slider (both are always fetched
+// together, over one shared range), so their rows are name and member count.
 export function renderModelToggles(prefs) {
   const list = document.getElementById('model-toggle-list');
   if (!list) return;
   const region = prefs.activeRegion || 'usa';
-  list.innerHTML = modelOrderFor(region)
+  const ensembleMode = prefs.view === 'ensemble';
+
+  list.classList.toggle('ensemble-mode', ensembleMode);
+
+  if (ensembleMode) {
+    list.innerHTML = orderedEnsembles(prefs)
+      .map((id) => {
+        const config = ENSEMBLE_CONFIGS[id];
+        if (!config) return '';
+        return (
+          `<div class="toggle-label model-toggle" data-order-id="${id}">` +
+          DRAG_HANDLE_HTML +
+          `<span class="model-name">${config.label}</span>` +
+          `<span class="model-note">${config.memberCount} members</span>` +
+          `</div>`
+        );
+      })
+      .join('');
+    return;
+  }
+
+  list.innerHTML = orderedModels(prefs)
     .map((id) => {
       const config = MODEL_CONFIGS[id];
       const days = prefs.modelDays?.[id] ?? config.defaultDays;
       const on = prefs.modelToggles?.[id] ? ' checked' : '';
       return (
-        `<label class="toggle-label model-toggle">` +
+        `<div class="toggle-label model-toggle" data-order-id="${id}">` +
+        DRAG_HANDLE_HTML +
+        `<label class="model-name">` +
         `<input type="checkbox" data-model-toggle="${id}"${on}> ${modelLabelFor(id, region)}` +
+        `</label>` +
         `<input type="range" data-model-days="${id}" min="1" max="${config.maxDays}" value="${days}" class="range-input">` +
         `<span data-model-days-val="${id}">${days}</span>d` +
-        `</label>`
+        `</div>`
       );
     })
     .join('');
+}
+
+// Populate the All Locations model picker with this region's models and the
+// ensembles. Kept in sync with the model list so a reorder or region switch
+// reorders the options too.
+export function renderAllLocationsSelect(prefs) {
+  const select = document.getElementById('all-locations-model');
+  if (!select) return;
+  const region = prefs.activeRegion || 'usa';
+  const options = [
+    ...orderedModels(prefs).map((id) => [id, modelLabelFor(id, region)]),
+    ...orderedEnsembles(prefs).map((id) => [id, ENSEMBLE_CONFIGS[id]?.label || id]),
+  ];
+  select.innerHTML = options
+    .map(([id, label]) => `<option value="${id}">${label}</option>`)
+    .join('');
+  if (prefs.allLocationsModel) select.value = prefs.allLocationsModel;
 }
 
 // Wire up all settings controls
@@ -111,6 +177,19 @@ export function initControls(callbacks, prefs) {
       callbacks.onSuppChange(getSuppState());
     });
   });
+
+  // Drag-to-reorder. The handler re-reads the DOM order on drop, so it works
+  // for whichever list is currently rendered.
+  const modelList = document.getElementById('model-toggle-list');
+  makeReorderable(modelList, (order) => callbacks.onModelReorder(order));
+
+  // All Locations model picker
+  const allLocSelect = document.getElementById('all-locations-model');
+  if (allLocSelect) {
+    allLocSelect.addEventListener('change', () => {
+      callbacks.onAllLocationsModelChange(allLocSelect.value);
+    });
+  }
 
   // Per-model toggles and day sliders (rows are generated above)
   for (const modelId of modelOrderFor(prefs?.activeRegion || 'usa')) {

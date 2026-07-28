@@ -1,4 +1,9 @@
-import { modelOrderFor, MODEL_CONFIGS } from '../data/models.js';
+import {
+  modelOrderFor,
+  MODEL_CONFIGS,
+  ENSEMBLE_ORDER,
+  ALL_LOCATIONS_DEFAULT,
+} from '../data/models.js';
 
 const PREFS_KEY = 'soar_preferences';
 
@@ -47,6 +52,11 @@ const DEFAULTS = {
   // Replaced per region in defaultProfile().
   modelToggles: {},
   modelDays: {},
+  // Display order, user-reorderable. Defaults to each region's canonical order.
+  modelOrder: [],
+  ensembleOrder: [],
+  // Which single model or ensemble the All Locations view uses.
+  allLocationsModel: null,
   ensembleDays: 14,
   supplementaryRows: {
     gusts: true,
@@ -118,6 +128,9 @@ function defaultProfile(region) {
     ...deepCopyDefaults(),
     modelToggles: defaultToggles(region),
     modelDays: defaultDays(region),
+    modelOrder: [...modelOrderFor(region)],
+    ensembleOrder: [...ENSEMBLE_ORDER],
+    allLocationsModel: ALL_LOCATIONS_DEFAULT[region] || modelOrderFor(region)[0],
     ...overrides,
     units: { ...DEFAULTS.units, ...overrides.units },
   };
@@ -133,6 +146,23 @@ function deepCopyDefaults() {
     layout: { ...DEFAULTS.layout },
     savedLocations: [],
   };
+}
+
+// Keep a saved display order usable when the underlying list has changed:
+// drop ids the region no longer has, and append any that are new so a model
+// added later cannot silently vanish from the settings list.
+function sanitizeOrder(saved, valid) {
+  const known = new Set(valid);
+  const seen = new Set();
+  const order = [];
+  for (const id of Array.isArray(saved) ? saved : []) {
+    if (known.has(id) && !seen.has(id)) {
+      order.push(id);
+      seen.add(id);
+    }
+  }
+  for (const id of valid) if (!seen.has(id)) order.push(id);
+  return order;
 }
 
 export function getDefaultLayout() {
@@ -164,6 +194,15 @@ function hydrateProfile(saved, region) {
     if (max != null) modelDays[id] = Math.min(modelDays[id] ?? max, max);
   }
 
+  const modelOrder = sanitizeOrder(saved.modelOrder, ids);
+  const ensembleOrder = sanitizeOrder(saved.ensembleOrder, ENSEMBLE_ORDER);
+
+  // The saved All Locations pick must still exist in this region.
+  const valid = new Set([...ids, ...ENSEMBLE_ORDER]);
+  const allLocationsModel = valid.has(saved.allLocationsModel)
+    ? saved.allLocationsModel
+    : base.allLocationsModel;
+
   const profile = {
     ...base,
     ...saved,
@@ -172,6 +211,9 @@ function hydrateProfile(saved, region) {
     windThresholds: { ...base.windThresholds, ...saved.windThresholds },
     modelToggles,
     modelDays,
+    modelOrder,
+    ensembleOrder,
+    allLocationsModel,
     supplementaryRows: { ...base.supplementaryRows, ...saved.supplementaryRows },
     layout: { ...base.layout, ...saved.layout },
     savedLocations: saved.savedLocations || [],

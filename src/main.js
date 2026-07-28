@@ -5,6 +5,9 @@ import { renderTable } from './ui/table.js';
 import {
   initControls,
   renderModelToggles,
+  renderAllLocationsSelect,
+  orderedModels,
+  orderedEnsembles,
   restoreControlState,
   refreshHideAboveInput,
   refreshCloudRangeLabels,
@@ -21,6 +24,7 @@ import {
   modelOrderFor,
   modelLabelFor,
   MODEL_CONFIGS,
+  ENSEMBLE_CONFIGS,
   ALL_LOCATIONS_FALLBACK,
 } from './data/models.js';
 import {
@@ -37,11 +41,13 @@ import './styles/main.css';
 
 let prefs = loadPrefs();
 
-// The active region's model list. Switching regions reloads the page, so this
-// is settled for the lifetime of the module and every call site below can keep
-// treating it as a plain constant.
-const MODEL_ORDER = modelOrderFor(prefs.activeRegion);
-const modelLabel = (id) => modelLabelFor(id, prefs.activeRegion);
+// The active region's model list, in the user's chosen display order.
+// Switching regions reloads the page, but the order can change in place, so
+// this is a live getter rather than a constant.
+let MODEL_ORDER = orderedModels(prefs);
+let ENSEMBLE_LIST = orderedEnsembles(prefs);
+const modelLabel = (id) =>
+  ENSEMBLE_CONFIGS[id]?.label || modelLabelFor(id, prefs.activeRegion);
 const modelData = {}; // { hrrr: transformedData, ecmwf: ..., ... }
 let ensembleData = null; // { gefs: transformedData, ecmwf_ens: transformedData }
 let locationUI = null;
@@ -51,22 +57,42 @@ let currentSiteElevationFt = null; // true ground elevation of the active single
 // hardcoded in index.html — the two regions have different models, and the
 // order becomes user-editable in a later session.
 const MODEL_CONTAINER_IDS = Object.fromEntries(
-  MODEL_ORDER.map((id) => [id, `${id}-table`])
+  modelOrderFor(prefs.activeRegion).map((id) => [id, `${id}-table`])
 );
+const ENSEMBLE_CONTAINER_IDS = { gefs: 'gefs-table', ecmwf_ens: 'ecmwf-ens-table' };
+
+function makeSection(id, containerId, extraClass, syncGroup) {
+  const section = document.createElement('div');
+  section.className = `table-section${extraClass}`;
+  section.dataset.model = id;
+  section.dataset.syncGroup = syncGroup;
+  const container = document.createElement('div');
+  container.id = containerId;
+  container.className = 'table-container';
+  section.appendChild(container);
+  return section;
+}
 
 function buildModelSections() {
   const wrapper = document.querySelector('.tables-wrapper');
-  const firstEnsemble = wrapper.querySelector('.ensemble-section');
+  wrapper.querySelectorAll('.table-section').forEach((el) => el.remove());
   for (const id of MODEL_ORDER) {
-    const section = document.createElement('div');
-    section.className = 'table-section';
-    section.dataset.model = id;
-    section.dataset.syncGroup = 'global';
-    const container = document.createElement('div');
-    container.id = MODEL_CONTAINER_IDS[id];
-    container.className = 'table-container';
-    section.appendChild(container);
-    wrapper.insertBefore(section, firstEnsemble);
+    wrapper.appendChild(makeSection(id, MODEL_CONTAINER_IDS[id], '', 'global'));
+  }
+  for (const id of ENSEMBLE_LIST) {
+    wrapper.appendChild(
+      makeSection(id, ENSEMBLE_CONTAINER_IDS[id], ' ensemble-section hidden', 'ensemble')
+    );
+  }
+}
+
+// Re-order the existing sections in place. Tables already rendered keep their
+// contents; only their position moves.
+function applySectionOrder() {
+  const wrapper = document.querySelector('.tables-wrapper');
+  for (const id of [...MODEL_ORDER, ...ENSEMBLE_LIST]) {
+    const section = wrapper.querySelector(`.table-section[data-model="${id}"]`);
+    if (section) wrapper.appendChild(section);
   }
 }
 
@@ -87,6 +113,19 @@ function buildSharedDaylightMask(datasets) {
     }
   }
   return mask;
+}
+
+// Which model the All Locations view should draw.
+//
+// The saved pick wins, but a model the user has since switched off would show
+// an empty view, so fall back to the first enabled one. Ensembles are always
+// available — they are fetched on demand and have no toggle. Returns null only
+// when the region genuinely has nothing enabled, which the caller reports.
+function allLocationsModel() {
+  const picked = prefs.allLocationsModel;
+  if (picked && ENSEMBLE_CONFIGS[picked]) return picked;
+  if (picked && prefs.modelToggles[picked]) return picked;
+  return MODEL_ORDER.find((id) => prefs.modelToggles[id]) || null;
 }
 
 // The "Hide >" cutoff for the selected altitude unit, converted to feet.
@@ -219,24 +258,24 @@ function rerender() {
   setEnsembleVisibility(isEnsembleView);
 
   if (isEnsembleView) {
-    // Render ensemble tables
-    const gefsContainer = document.getElementById('gefs-table');
-    const ecmwfEnsContainer = document.getElementById('ecmwf-ens-table');
     const ensOpts = getTableOptions();
-    ensOpts.sharedDaylight = buildSharedDaylightMask([ensembleData?.gefs, ensembleData?.ecmwf_ens]);
+    ensOpts.sharedDaylight = buildSharedDaylightMask(
+      ENSEMBLE_LIST.map((id) => ensembleData?.[id])
+    );
 
-    if (ensembleData?.gefs) {
-      renderTable(gefsContainer, ensembleData.gefs, ensOpts);
-      enableMomentumScroll(gefsContainer);
-    } else {
-      gefsContainer.innerHTML = '<div class="no-data">Click a location to load ensemble data.</div>';
-    }
-    if (ensembleData?.ecmwf_ens) {
-      renderTable(ecmwfEnsContainer, ensembleData.ecmwf_ens, ensOpts);
-      enableMomentumScroll(ecmwfEnsContainer);
-    } else {
-      ecmwfEnsContainer.innerHTML = '';
-    }
+    ENSEMBLE_LIST.forEach((id, i) => {
+      const container = document.getElementById(ENSEMBLE_CONTAINER_IDS[id]);
+      if (!container) return;
+      if (ensembleData?.[id]) {
+        renderTable(container, ensembleData[id], ensOpts);
+        enableMomentumScroll(container);
+      } else {
+        // Only the first section explains itself; the rest stay quiet rather
+        // than repeating the same prompt down the page.
+        container.innerHTML =
+          i === 0 ? '<div class="no-data">Click a location to load ensemble data.</div>' : '';
+      }
+    });
   } else {
     // Render normal model tables
     const opts = getTableOptions();
@@ -385,7 +424,15 @@ function setupAllLocationsScrollSync() {
   });
 }
 
+// This view fetches per saved location in sequence and appends as it goes, so
+// two overlapping runs — easy to trigger by flipping a few model toggles — would
+// interleave their output into the same container. Each run takes a ticket and
+// stops as soon as a newer one starts.
+let allLocationsRun = 0;
+
 async function renderAllLocations() {
+  const runId = ++allLocationsRun;
+  const superseded = () => runId !== allLocationsRun;
   const firstContainer = document.getElementById(MODEL_CONTAINER_IDS[MODEL_ORDER[0]]);
   const loading = document.getElementById('loading');
   const wrapper = document.querySelector('.tables-wrapper');
@@ -409,16 +456,30 @@ async function renderAllLocations() {
   loading.classList.remove('hidden');
   firstContainer.innerHTML = '';
 
-  // Use the first enabled model for all-locations view
-  const activeModel = MODEL_ORDER.find((id) => prefs.modelToggles[id]) || MODEL_ORDER[0];
+  const activeModel = allLocationsModel();
+  if (!activeModel) {
+    loading.classList.add('hidden');
+    firstContainer.innerHTML =
+      '<div class="no-data">No models enabled. Turn one on under ' +
+      'Settings \u2192 Models &amp; Forecast to see this view.</div>';
+    return;
+  }
+  const isEnsembleModel = !!ENSEMBLE_CONFIGS[activeModel];
 
   try {
     for (const loc of prefs.savedLocations) {
+      if (superseded()) return;
       let modelUsed = activeModel;
       let data = null;
       try {
-        const raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
-        data = toModelData(raw, activeModel);
+        if (isEnsembleModel) {
+          const raw = await fetchEnsemble(loc.lat, loc.lon, prefs.ensembleDays || 14);
+          data = transformEnsembleData(raw, activeModel);
+          if (data && data.hours.length === 0) data = null;
+        } else {
+          const raw = await fetchModel(activeModel, loc.lat, loc.lon, prefs.modelDays[activeModel]);
+          data = toModelData(raw, activeModel);
+        }
       } catch {
         data = null;
       }
@@ -426,7 +487,7 @@ async function renderAllLocations() {
       // either error or return empty data; fall back to this region's global
       // model per-location.
       const fallback = ALL_LOCATIONS_FALLBACK[prefs.activeRegion];
-      if (!data && fallback && activeModel !== fallback) {
+      if (!data && !isEnsembleModel && fallback && activeModel !== fallback) {
         try {
           const raw = await fetchModel(fallback, loc.lat, loc.lon, prefs.modelDays[fallback]);
           data = toModelData(raw, fallback);
@@ -435,6 +496,7 @@ async function renderAllLocations() {
           data = null;
         }
       }
+      if (superseded()) return;
       if (!data) {
         const errItem = document.createElement('div');
         errItem.className = 'all-locations-item';
@@ -460,6 +522,7 @@ async function renderAllLocations() {
       // Each saved location has its own ground elevation; resolve it per-row so
       // the overlay is correct across the All Locations view (best-effort).
       const allOpts = getTableOptions();
+      allOpts.isEnsemble = isEnsembleModel && modelUsed === activeModel;
       allOpts.siteElevationFt = null;
       if (prefs.showGroundLevel) {
         try {
@@ -474,9 +537,11 @@ async function renderAllLocations() {
     }
     setupAllLocationsScrollSync();
   } catch (err) {
-    firstContainer.innerHTML += `<div class="error">Error: ${err.message}</div>`;
+    if (!superseded()) {
+      firstContainer.innerHTML += `<div class="error">Error: ${err.message}</div>`;
+    }
   } finally {
-    loading.classList.add('hidden');
+    if (!superseded()) loading.classList.add('hidden');
     updateTableSectionVisibility();
   }
 }
@@ -885,6 +950,7 @@ function init() {
   locationUI.renderSavedLocations(prefs.savedLocations);
 
   renderModelToggles(prefs);
+  renderAllLocationsSelect(prefs);
 
   initControls({
     onViewChange(view) {
@@ -898,6 +964,8 @@ function init() {
       prefs.showAllLocations = false;
       prefs.view = view;
       savePrefs(prefs);
+      // The Models dropdown lists whatever is on screen.
+      renderModelToggles(prefs);
       // Returning from all-locations: single-location model data may be missing.
       if (wasAllLocations && prefs.lastLocation) {
         loadWeather(prefs.lastLocation.lat, prefs.lastLocation.lon);
@@ -988,6 +1056,26 @@ function init() {
       } else {
         rerender();
       }
+    },
+    onModelReorder(order) {
+      // The list renders either models or ensembles depending on the active
+      // view, so route the new order to whichever it was showing.
+      if (prefs.view === 'ensemble') {
+        prefs.ensembleOrder = order;
+        ENSEMBLE_LIST = orderedEnsembles(prefs);
+      } else {
+        prefs.modelOrder = order;
+        MODEL_ORDER = orderedModels(prefs);
+      }
+      savePrefs(prefs);
+      applySectionOrder();
+      renderAllLocationsSelect(prefs);
+      if (prefs.showAllLocations) renderAllLocations();
+    },
+    onAllLocationsModelChange(id) {
+      prefs.allLocationsModel = id;
+      savePrefs(prefs);
+      if (prefs.showAllLocations) renderAllLocations();
     },
     onReset() {
       prefs = resetPrefs();
